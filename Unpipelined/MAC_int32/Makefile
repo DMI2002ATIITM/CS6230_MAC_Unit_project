@@ -1,14 +1,14 @@
-TOPFILE=MAC_int32.bsv
+TOPFILE=Signed_8bitMul.bsv
 BSVINCDIR=.:%/Libraries
 BSCDEFINES=RV64
 VERILOGDIR=verilog/
 BUILDDIR=intermediate/
 
-#include own_counter_verif/Makefile.verif
+include Signed_8bitMul_verif/Makefile.verif
 
-#.PHONY: simulate
-#simulate: 
-#	@make SIM=verilator
+.PHONY: simulate
+simulate: 
+	@make SIM=verilator
 
 .PHONY: generate_verilog
 generate_verilog:

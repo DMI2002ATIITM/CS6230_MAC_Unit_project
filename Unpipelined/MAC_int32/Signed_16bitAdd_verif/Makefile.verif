@@ -1,0 +1,15 @@
+SIM ?= verilator
+TOPLEVEL_LANG ?= verilog
+
+PWD=$(shell pwd)
+
+export PYTHONPATH:=$(PWD)/Signed_16bitAdd_verif:$(PYTHONPATH)
+
+VERILOG_SOURCES=$(PWD)/verilog/mkSigned_16bitAdd.v
+
+EXTRA_ARGS = --trace --trace-structs
+
+TOPLEVEL = mkSigned_16bitAdd
+MODULE   := test_Signed_16bitAdd
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

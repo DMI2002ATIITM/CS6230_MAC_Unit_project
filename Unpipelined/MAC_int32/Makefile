@@ -1,10 +1,10 @@
-TOPFILE=Signed_8bitMul.bsv
+TOPFILE=Signed_16bitAdd.bsv
 BSVINCDIR=.:%/Libraries
 BSCDEFINES=RV64
 VERILOGDIR=verilog/
 BUILDDIR=intermediate/
 
-include Signed_8bitMul_verif/Makefile.verif
+include Signed_16bitAdd_verif/Makefile.verif
 
 .PHONY: simulate
 simulate: 

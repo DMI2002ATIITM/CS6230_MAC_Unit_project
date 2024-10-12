@@ -52,6 +52,7 @@ async def get_output(dut):
     #print(int(str(rtl_answer),2) ^ 0xFFFF + 1)
     str_ans = str(rtl_answer)
     if(str_ans[0] == "1"):
+       # rtl_answer = int(str_ans,2) ^ 0xFFFF) + 1) * -1
         rtl_answer = int(bin((int(str_ans,2) ^ 0xFFFF) + 1)[2:],2) * -1
     else:
         rtl_answer = int(str(rtl_answer),2)

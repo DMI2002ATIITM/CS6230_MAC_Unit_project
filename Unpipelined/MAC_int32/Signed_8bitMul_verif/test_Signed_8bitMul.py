@@ -65,9 +65,9 @@ async def test_mul(dut):
     cocotb.start_soon(clock.start(start_high=False))
     await reset(dut)
     
-    A = list(range(-128,3))
-    B = list(range(0,127))
-    #B = [-1] * len(A)
+    # Disable dump.vcd when verifying all combinations from -128 to 127
+    A = list(range(0,128))
+    B = list(range(0,128))
     
     for i in A:
         for j in B:

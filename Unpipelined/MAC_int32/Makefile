@@ -1,10 +1,10 @@
-TOPFILE=Signed_8bitMul_woAddop.bsv
+TOPFILE=MAC_int32.bsv
 BSVINCDIR=.:%/Libraries
 BSCDEFINES=RV64
 VERILOGDIR=verilog/
 BUILDDIR=intermediate/
 
-include Signed_8bitMul_woAddop_verif/Makefile.verif
+include MAC_int32_verif/Makefile.verif
 
 .PHONY: simulate
 simulate: 

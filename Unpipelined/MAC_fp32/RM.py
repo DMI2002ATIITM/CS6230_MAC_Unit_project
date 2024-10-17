@@ -20,10 +20,36 @@ def bfloat16_mul(A,B):
     B_exp =  int(B[1:9],2)
     B_frac =  int("1"+B[9:],2)
 
-    neg_bias = int("10000001",2)
-
+    bias = int("1111111",2)
+    # bias = int("10000001",2)
+    
     AB_sign = bin(A_sign ^ B_sign)[2:]
-    AB_exp = bin(A_exp + B_exp + neg_bias)[2:][-8:]
+
+    AB_exp = bin(A_exp + B_exp - bias)[2:][-8:]
+    # AB_exp = bin(A_exp + B_exp + bias)[2:][-8:]
+
+    # Multiplication of mantissa
+    temp_A = bin(A_frac)[2:]
+    for i in range(len(temp_A)):
+        if(temp_A[-1] == "1"):
+            break
+        temp_A = temp_A[:-1]
+
+    temp_B = bin(B_frac)[2:]
+    for i in range(len(temp_B)):
+        if(temp_B[-1] == "1"):
+            break
+        temp_B = temp_B[:-1]
+
+    nob_A = len(temp_A)
+    nob_B = len(temp_B)
+
+    temp_AB = int(temp_A,2) * int(temp_B,2)
+    nob_AB = len(bin(temp_AB)[2:])
+
+    exp_adj = nob_AB - (nob_A + nob_B - 1) 
+    AB_exp = bin(int(AB_exp,2) + exp_adj)[2:]
+
     AB_frac = round_bfloat16(bin(A_frac * B_frac)[3:])
 
     return AB_sign + AB_exp + AB_frac
@@ -71,12 +97,24 @@ def fp32_add(A,B):
     exp_diff = abs(A_exp - B_exp)
     # if()
 
-A = "0100010110111100"
-B = "0100100110011110"
-C = "01001010011111011111001110110111"
 
+file_a = open("A_binary.txt","r")
+file_b = open("B_binary.txt","r")
 
-ANS = bfloat16_mul(A,B)
-print(decode_bfloat_16(A))
-print(decode_bfloat_16(B))
-print(decode_bfloat_16(ANS))
+A_inps = file_a.readlines()
+B_inps = file_b.readlines()
+
+file_a.close()
+file_b.close()
+
+outfile = open("check_AB_output.txt","w")
+# outfile = open("check_AB_output_1.txt","w")
+for i in range(len(A_inps)):
+    strp_A = A_inps[i].strip("\n")
+    strp_B = B_inps[i].strip("\n")
+    AB = bfloat16_mul(strp_A,strp_B)
+    dec_A = decode_bfloat_16(A_inps[i])
+    dec_B = decode_bfloat_16(B_inps[i])
+    dec_AB = decode_bfloat_16(AB)
+    outfile.write(f"TEST_NO: {i+1} (BINARY) A -> {strp_A} | B ->  {strp_B} | AxB -> {AB} | (DECIMAL) A -> {dec_A} | B -> {dec_B} | AxB -> {dec_AB} | Correct answer -> {dec_A*dec_B} | Error -> {(dec_A*dec_B) - dec_AB} \n")
+outfile.close()

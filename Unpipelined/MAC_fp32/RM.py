@@ -6,7 +6,7 @@ def round_bfloat16(A):
         return A[:7]
     elif(round_bit == "1"):
         temp = A[8:]
-        if(int(temp,2) == 0):
+        if(int(temp,2) == 0 and A[6] == "0"):
             return A[:6]+"0"
         else:
             return bin(int(A[:7],2)+1)[2:].rjust(7,"0")
@@ -37,7 +37,7 @@ def round_fp32(A):
         return A[:23]
     elif(round_bit == "1"):
         temp = A[24:]
-        if(int(temp,2) == 0):
+        if(int(temp,2) == 0 and A[22] == "0"):
             return A[:22]+"0"
         else:
             return bin(int(A[:23],2)+1)[2:].rjust(23,"0")            
@@ -244,8 +244,8 @@ wrong = open("MAC_wrong_Results.txt","w")
 for i in range(len(A_inps)):
     strp_A = A_inps[i].strip("\n")
     strp_B = B_inps[i].strip("\n")
-    if(strp_A[:-2] == strp_B[:-2]):
-    # if(strp_A == strp_B):
+    # if(strp_A[:-2] == strp_B[:-2]):
+    if(strp_A == strp_B):
         outfile.write(f"TESTCASE {i+1}: {strp_A} == {strp_B} <= PASS \n")
     else:
         outfile.write(f"TESTCASE {i+1}: {strp_A} != {strp_B} <= FAIL \n")

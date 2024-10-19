@@ -1,19 +1,15 @@
 def round_bfloat16(A):
     # input and output are str
-    A += "0" # Adding for safety
-    print("A",A)
+    A += "0"
     round_bit = A[7]
     if(round_bit == "0"):
         return A[:7]
-    # return A[:7]
     elif(round_bit == "1"):
         temp = A[8:]
-        if(int(temp,2) == 0):
+        if(int(temp,2) == 0 and A[6] == "0"):
             return A[:6]+"0"
         else:
-            print("here")
             return bin(int(A[:7],2)+1)[2:].rjust(7,"0")
-        # return A[:6]+"0"
 
 def bfloat16_mul(A,B):
     A_sign = int(A[0],2)
@@ -88,8 +84,8 @@ def decode_bfloat_16(A):
 
     return ans
 
-A = "0100000100100000"
-B = "0011111000100011"
+A = "0011111110011100"
+B = "0100010010010110"
 AB = bfloat16_mul(A,B)
 print(AB)
 
@@ -105,5 +101,10 @@ print(AB)
 # 0 01111111 1001100   <- RM output
 # 0 01111111 100101111  <- manual calculation
 # 0 01111111 10010111111111111111111 <- website result
+
+
+# Test 79
+# 0 10001001 0110111 <- RM output
+# 0 10001001 0110111 0000000000100000 <- Website result
 
 

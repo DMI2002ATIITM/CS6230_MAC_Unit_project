@@ -2,15 +2,23 @@
 def round_fp32(A):
     # input and output are str
     A += "0"
+    adj_exp = 0
     round_bit = A[23]
     if(round_bit == "0"):
-        return A[:23]
+        return [A[:23],adj_exp]
     elif(round_bit == "1"):
         temp = A[24:]
         if(int(temp,2) == 0 and A[22] == "0"):
-            return A[:22]+"0"
+            return [A[:22]+"0",adj_exp]
         else:
-            return bin(int(A[:23],2)+1)[2:].rjust(23,"0")            
+            # possibility of carry being generated is there
+            carry_check = bin(int(A[:23],2)+1)[2:]
+            if(len(carry_check) > 23):
+                # print("here too")
+                adj_exp = len(carry_check) - 23
+                return [carry_check[1:24], adj_exp]
+            else:
+                return [bin(int(A[:23],2)+1)[2:].rjust(23,"0"), adj_exp]
 
 def decode_fp32(A):
     A_sign = A[0]
@@ -34,6 +42,7 @@ def decode_fp32(A):
 
     return ans
 
+
 def fp32_add(A,B):
     A_sign = A[0]
     A_exp =  int(A[1:9],2)
@@ -46,7 +55,7 @@ def fp32_add(A,B):
     exp_diff = A_exp - B_exp
 
     if(exp_diff < 0):
-        print("1")
+        # print("1")
 
         A_sign, B_sign = B_sign, A_sign
         A_exp, B_exp = B_exp, A_exp
@@ -60,28 +69,38 @@ def fp32_add(A,B):
     Blen_bef_add = len(B_frac)
     C_exp = A_exp
 
-    print(A_sign,B_sign)
+    # print(A_sign,B_sign)
     if(A_sign == B_sign):
-        print("3")
+        # print("3")
         # addition ...
         A_frac = A_frac.ljust(Blen_bef_add,"0")
         # print(Blen_bef_add)
-        print(A_frac)
+        # print(A_frac)
         # print(B_frac)
         sum_val = bin(int(A_frac,2) + int(B_frac,2))[2:]
-        print(sum_val)
+        # print(sum_val)
         # carry detection
         if(len(sum_val) > Blen_bef_add):
-            print("4")
+            # print("4")
             # Adjust exponent
             exp_add_diff = len(sum_val) - Blen_bef_add
             A_exp += exp_add_diff
-        rounded_sum = round_fp32(sum_val[1:])
+
+        round_ret = round_fp32(sum_val[1:])
+        if(round_ret[1] == 0):
+            rounded_sum = round_ret[0]
+        else:
+            # print("here 3")
+            A_exp = bin(int(A_exp,2) + round_ret[1])[2:]
+            rounded_sum = round_ret[0]
+
+
         return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
     else:
-        print("5")
+        # print("5")
         # subtraction ...
         return None
+
 A = "0100010010110111"
 B = "01000111011111011111001110110111"
 Add = fp32_add(A,B)

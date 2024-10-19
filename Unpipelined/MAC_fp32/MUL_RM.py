@@ -1,15 +1,25 @@
 def round_bfloat16(A):
     # input and output are str
     A += "0"
+    adj_exp = 0
     round_bit = A[7]
     if(round_bit == "0"):
-        return A[:7]
+        return [A[:7],adj_exp]
     elif(round_bit == "1"):
         temp = A[8:]
         if(int(temp,2) == 0 and A[6] == "0"):
-            return A[:6]+"0"
+            return [A[:6]+"0",adj_exp]
         else:
-            return bin(int(A[:7],2)+1)[2:].rjust(7,"0")
+            # print("here")
+            # possibility of carry being generated is there
+            carry_check = bin(int(A[:7],2)+1)[2:]
+            if(len(carry_check) > 7):
+                # print("here too")
+                adj_exp = len(carry_check) - 7
+                return [carry_check[1:8], adj_exp]
+            else:
+                return [bin(int(A[:7],2)+1)[2:].rjust(7,"0"), adj_exp]
+
 
 def bfloat16_mul(A,B):
     A_sign = int(A[0],2)
@@ -29,7 +39,7 @@ def bfloat16_mul(A,B):
     # AB_exp = bin(A_exp + B_exp + bias)[2:][-8:]
 
     AB_exp = bin((A_exp + B_exp + bias) & 0xFF)[2:][-8:]
-    print(AB_exp)
+    # print(AB_exp)
 
     # Multiplication of mantissa
     temp_A = bin(A_frac)[2:]
@@ -46,21 +56,26 @@ def bfloat16_mul(A,B):
 
     nob_A = len(temp_A)
     nob_B = len(temp_B)
-    print(nob_A,nob_B)
+    # print(nob_A,nob_B)
 
     temp_AB = int(temp_A,2) * int(temp_B,2)
     nob_AB = len(bin(temp_AB)[2:])
 
     exp_adj = nob_AB - (nob_A + nob_B - 1) 
-    print(exp_adj)
+    # print(exp_adj)
     AB_exp = bin(int(AB_exp,2) + exp_adj)[2:]
 
-    print(f"before rounding {bin(A_frac * B_frac)[2:]}")
-    AB_frac = round_bfloat16(bin(A_frac * B_frac)[3:])
+    # print(f"before rounding {bin(A_frac * B_frac)[2:]}")
+    round_ret = round_bfloat16(bin(A_frac * B_frac)[3:])
+    if(round_ret[1] == 0):
+        AB_frac = round_ret[0]
+    else:
+        # print("here 3")
+        AB_exp = bin(int(AB_exp,2) + round_ret[1])[2:]
+        AB_frac = round_ret[0]
     # AB_frac = bin(A_frac * B_frac)[3:]
 
     return AB_sign + AB_exp.rjust(8,"0") + AB_frac
-
 
 def decode_bfloat_16(A):
     A_sign = A[0]
@@ -84,8 +99,8 @@ def decode_bfloat_16(A):
 
     return ans
 
-A = "0011111110011100"
-B = "0100010010010110"
+A = "0101001100101110"
+B = "0101010100111100"
 AB = bfloat16_mul(A,B)
 print(AB)
 
@@ -107,4 +122,13 @@ print(AB)
 # 0 10001001 0110111 <- RM output
 # 0 10001001 0110111 0000000000100000 <- Website result
 
-
+# Test 85
+# 0 11010001 10000000 <- RM output
+# 0 11010001 10000000
+# 0 11010001 10000000
+# 0 11010010 10000000
+# 0 11010010 00000000000000000000000 <- Website result
+# 0 11010010 1000000
+# 0 11010010 10000000
+# 0 11010010 00000000000000000000000 <- Website result
+# 0 11010010 0000000 <- RM output after bug fix

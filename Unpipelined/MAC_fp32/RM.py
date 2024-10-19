@@ -1,15 +1,25 @@
 def round_bfloat16(A):
     # input and output are str
     A += "0"
+    adj_exp = 0
     round_bit = A[7]
     if(round_bit == "0"):
-        return A[:7]
+        return [A[:7],adj_exp]
     elif(round_bit == "1"):
         temp = A[8:]
         if(int(temp,2) == 0 and A[6] == "0"):
-            return A[:6]+"0"
+            return [A[:6]+"0",adj_exp]
         else:
-            return bin(int(A[:7],2)+1)[2:].rjust(7,"0")
+            # print("here")
+            # possibility of carry being generated is there
+            carry_check = bin(int(A[:7],2)+1)[2:]
+            if(len(carry_check) > 7):
+                # print("here too")
+                adj_exp = len(carry_check) - 7
+                return [carry_check[1:8], adj_exp]
+            else:
+                return [bin(int(A[:7],2)+1)[2:].rjust(7,"0"), adj_exp]
+
             
 
 # def round_bfloat16(A):
@@ -32,15 +42,23 @@ def round_bfloat16(A):
 def round_fp32(A):
     # input and output are str
     A += "0"
+    adj_exp = 0
     round_bit = A[23]
     if(round_bit == "0"):
-        return A[:23]
+        return [A[:23],adj_exp]
     elif(round_bit == "1"):
         temp = A[24:]
         if(int(temp,2) == 0 and A[22] == "0"):
-            return A[:22]+"0"
+            return [A[:22]+"0",adj_exp]
         else:
-            return bin(int(A[:23],2)+1)[2:].rjust(23,"0")            
+            # possibility of carry being generated is there
+            carry_check = bin(int(A[:23],2)+1)[2:]
+            if(len(carry_check) > 23):
+                # print("here too")
+                adj_exp = len(carry_check) - 23
+                return [carry_check[1:24], adj_exp]
+            else:
+                return [bin(int(A[:23],2)+1)[2:].rjust(23,"0"), adj_exp]
 
 def bfloat16_mul(A,B):
     A_sign = int(A[0],2)
@@ -60,6 +78,7 @@ def bfloat16_mul(A,B):
     # AB_exp = bin(A_exp + B_exp + bias)[2:][-8:]
 
     AB_exp = bin((A_exp + B_exp + bias) & 0xFF)[2:][-8:]
+    # print(AB_exp)
 
     # Multiplication of mantissa
     temp_A = bin(A_frac)[2:]
@@ -76,14 +95,24 @@ def bfloat16_mul(A,B):
 
     nob_A = len(temp_A)
     nob_B = len(temp_B)
+    # print(nob_A,nob_B)
 
     temp_AB = int(temp_A,2) * int(temp_B,2)
     nob_AB = len(bin(temp_AB)[2:])
 
     exp_adj = nob_AB - (nob_A + nob_B - 1) 
+    # print(exp_adj)
     AB_exp = bin(int(AB_exp,2) + exp_adj)[2:]
 
-    AB_frac = round_bfloat16(bin(A_frac * B_frac)[3:])
+    # print(f"before rounding {bin(A_frac * B_frac)[2:]}")
+    round_ret = round_bfloat16(bin(A_frac * B_frac)[3:])
+    if(round_ret[1] == 0):
+        AB_frac = round_ret[0]
+    else:
+        # print("here 3")
+        AB_exp = bin(int(AB_exp,2) + round_ret[1])[2:]
+        AB_frac = round_ret[0]
+    # AB_frac = bin(A_frac * B_frac)[3:]
 
     return AB_sign + AB_exp.rjust(8,"0") + AB_frac
 
@@ -175,7 +204,16 @@ def fp32_add(A,B):
             # Adjust exponent
             exp_add_diff = len(sum_val) - Blen_bef_add
             A_exp += exp_add_diff
-        rounded_sum = round_fp32(sum_val[1:])
+
+        round_ret = round_fp32(sum_val[1:])
+        if(round_ret[1] == 0):
+            rounded_sum = round_ret[0]
+        else:
+            # print("here 3")
+            A_exp = bin(int(A_exp,2) + round_ret[1])[2:]
+            rounded_sum = round_ret[0]
+
+
         return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
     else:
         # print("5")
@@ -241,6 +279,7 @@ file_b.close()
 
 outfile = open("MAC_check_Results.txt","w")
 wrong = open("MAC_wrong_Results.txt","w")
+fail = 0
 for i in range(len(A_inps)):
     strp_A = A_inps[i].strip("\n")
     strp_B = B_inps[i].strip("\n")
@@ -248,8 +287,12 @@ for i in range(len(A_inps)):
     if(strp_A == strp_B):
         outfile.write(f"TESTCASE {i+1}: {strp_A} == {strp_B} <= PASS \n")
     else:
+        fail = 1
         outfile.write(f"TESTCASE {i+1}: {strp_A} != {strp_B} <= FAIL \n")
         wrong.write(f"TESTCASE {i+1}: {strp_A} != {strp_B} <= FAIL \n")
         print(f"   Wrong answer at testcase {i+1}")
 outfile.close()
 wrong.close()
+
+if(fail == 0):
+    print("ALL TESTCASES PASSED !!!")

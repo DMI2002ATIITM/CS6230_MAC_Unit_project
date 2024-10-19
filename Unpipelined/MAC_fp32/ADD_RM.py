@@ -1,12 +1,13 @@
            
 def round_fp32(A):
     # input and output are str
+    A += "0"
     round_bit = A[23]
     if(round_bit == "0"):
         return A[:23]
     elif(round_bit == "1"):
         temp = A[24:]
-        if(int(temp,2) == 0):
+        if(int(temp,2) == 0 and A[22] == "0"):
             return A[:22]+"0"
         else:
             return bin(int(A[:23],2)+1)[2:].rjust(23,"0")            
@@ -81,10 +82,10 @@ def fp32_add(A,B):
         print("5")
         # subtraction ...
         return None
-A = "0101011010011010"
-B = "01000001110010101100001010010000"
+A = "0100010010110111"
+B = "01000111011111011111001110110111"
 Add = fp32_add(A,B)
 print(Add)
 
-# 01010110100110100000000000000000
-# 01010110100110100000000000000000
+# 0 10001111 00000011101010111011100
+# 0 10001111 00000011101010111011100

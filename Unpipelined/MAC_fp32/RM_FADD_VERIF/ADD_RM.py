@@ -1,13 +1,15 @@
            
 def round_fp32(A):
     # input and output are str
-    A += "0"
+    # print(A, len(A))
+    A = A.ljust(25,"0") 
     adj_exp = 0
     round_bit = A[23]
     if(round_bit == "0"):
         return [A[:23],adj_exp]
     elif(round_bit == "1"):
         temp = A[24:]
+        # print(temp)
         if(int(temp,2) == 0 and A[22] == "0"):
             return [A[:22]+"0",adj_exp]
         else:
@@ -62,6 +64,7 @@ def fp32_add(A,B):
         A_frac, B_frac = B_frac, A_frac
 
 
+
     for i in range(abs(exp_diff)):
         # print("2")
         B_frac = "0" + B_frac
@@ -99,12 +102,98 @@ def fp32_add(A,B):
     else:
         # print("5")
         # subtraction ...
-        return None
+        # print("3")
+        # addition ...
+        A_frac = A_frac.ljust(Blen_bef_add,"0")
+        if(exp_diff == 0):
+            if(A_frac < B_frac):
+                A_sign = B_sign
+                A_frac, B_frac = B_frac, A_frac
+        # print(Blen_bef_add)
+        # print(A_frac)
+        # print(B_frac)
+        diff_val = bin(int(A_frac,2) - int(B_frac,2))[2:]
+        # print(diff_val)
+        # carry detection
+        # print(A_exp)
+        
+        if(len(diff_val) < Blen_bef_add):
+            # print("4")
+            # Adjust exponent
+            exp_sub_diff = len(diff_val) - Blen_bef_add
+            # print(len(diff_val),Blen_bef_add)
+            A_exp -= abs(exp_sub_diff)
+            # print(A_exp)
 
-A = "0100010010110111"
-B = "01000111011111011111001110110111"
-Add = fp32_add(A,B)
-print(Add)
+        round_ret = round_fp32(diff_val[1:])
+        if(round_ret[1] == 0):
+            rounded_sum = round_ret[0]
+        else:
+            # print("here 3")
+            # print(A_exp,round_ret[1])
+            A_exp = A_exp + round_ret[1]
+            rounded_sum = round_ret[0]
 
-# 0 10001111 00000011101010111011100
-# 0 10001111 00000011101010111011100
+
+        return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
+
+# A = "0101000111110010"
+# B = "11010001001101000011100101011001"
+# Add = fp32_add(A,B)
+# print(Add)
+
+# 01010001100101111110001101010100
+# 01010001100101111110001101010100
+
+
+
+
+print("Adding .....")
+file_a = open("negAB_output.txt","r")
+file_b = open("C_binary.txt","r")
+
+A_inps = file_a.readlines()
+B_inps = file_b.readlines()
+
+file_a.close()
+file_b.close()
+
+outfile = open("NP_MAC_output.txt","w")
+for i in range(len(A_inps)):
+    strp_A = A_inps[i].strip("\n")
+    strp_B = B_inps[i].strip("\n")
+    MAC = fp32_add(strp_A,strp_B)    
+    outfile.write(f"{MAC}\n")
+    print(f"  Addition done for TESTCASE {i+1}")
+outfile.close()
+
+# Checking computed results
+print("Checking results")
+file_a = open("NP_MAC_output.txt","r")
+file_b = open("NP_MAC_binary.txt","r")
+
+A_inps = file_a.readlines()
+B_inps = file_b.readlines()
+
+file_a.close()
+file_b.close()
+
+outfile = open("NP_MAC_check_Results.txt","w")
+wrong = open("NP_MAC_wrong_Results.txt","w")
+fail = 0
+for i in range(len(A_inps)):
+    strp_A = A_inps[i].strip("\n")
+    strp_B = B_inps[i].strip("\n")
+    # if(strp_A[:-2] == strp_B[:-2]):
+    if(strp_A == strp_B):
+        outfile.write(f"TESTCASE {i+1}: {strp_A} == {strp_B} <= PASS \n")
+    else:
+        fail = 1
+        outfile.write(f"TESTCASE {i+1}: {strp_A} != {strp_B} <= FAIL \n")
+        wrong.write(f"TESTCASE {i+1}: {strp_A} != {strp_B} <= FAIL \n")
+        print(f"   Wrong answer at testcase {i+1}")
+outfile.close()
+wrong.close()
+
+if(fail == 0):
+    print("ALL TESTCASES PASSED !!!")

@@ -1,0 +1,15 @@
+SIM ?= verilator
+TOPLEVEL_LANG ?= verilog
+
+PWD=$(shell pwd)
+
+export PYTHONPATH:=$(PWD)/bf16_mul_verif:$(PYTHONPATH)
+
+VERILOG_SOURCES=$(PWD)/verilog/mkbf16_mul.v
+
+EXTRA_ARGS = --trace --trace-structs
+
+TOPLEVEL = mkbf16_mul
+MODULE   := test_mkbf16_mul
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

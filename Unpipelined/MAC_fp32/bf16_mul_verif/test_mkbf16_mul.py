@@ -63,15 +63,15 @@ async def test_mul(dut):
     LB = []
     LAB = []
     
-    file_a = open("A_binary.txt","r")
+    file_a = open("combined_A_binary.txt","r")
     LA = file_a.readlines()
     file_a.close() 
     
-    file_b = open("B_binary.txt","r")
+    file_b = open("combined_B_binary.txt","r")
     LB = file_b.readlines()
     file_b.close() 
     
-    file_ab = open("AB_output.txt","r")
+    file_ab = open("combined_AB_binary.txt","r")
     LAB = file_ab.readlines()
     file_ab.close() 
     

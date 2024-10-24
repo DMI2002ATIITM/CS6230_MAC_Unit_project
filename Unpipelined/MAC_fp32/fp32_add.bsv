@@ -21,8 +21,49 @@ module mkfp32_add(Ifc_fp32_add);
     Reg#(Bool) got_B <- mkReg(False); 
     Reg#(Bool) expdiff_calculated <- mkReg(False);
     Reg#(Bit#(8)) expdiff <- mkReg(0);
+    Reg#(Bool) operands_swapped_if_needed <- mkReg(False);
+    Reg#(Bit#(50)) temp_A <- mkReg(0);
+    Reg#(Bit#(50)) temp_B <- mkReg(0);
+    Reg#(Bit#(50)) temp_sum <- mkReg(0);
+    Reg#(Bool) round_addition_result <- mkReg(False); 
+    Reg#(Bool) round_subtraction_result <- mkReg(False); 
+    Reg#(Bool) add_done <- mkReg(False);
+    Reg#(Bool) round_done <- mkReg(False);
+    Reg#(Bit#(31)) add_res_with_adj_exp <- mkReg(0);
+    Reg#(Bool) assembled_answer <- mkReg(False);
+    Reg#(Bit#(1)) sign_c <- mkReg(0);
+    Reg#(Bool) add_prep_done <- mkReg(False);
     
-    function Bit#(8) rca_8bit(Bit#(8) a, Bit#(8) c);
+    function Bit#(25) add_25bits(Bit#(25) a, Bit#(25) b);
+	Bit#(25) outp = 25'b0;
+	Bit#(1) carry = 1'b0;
+	outp[0] = a[0] ^ b[0];
+	carry = a[0] & b[0];
+	for(Integer i = 1; i < 25; i = i + 1)
+	begin
+		outp[i] = a[i] ^ b[i] ^ carry;
+		carry = (a[i] & b[i]) | (a[i] ^ b[i]) & carry;
+	end
+
+	return outp;
+    endfunction:add_25bits
+
+
+    function Bit#(31) add_31bits(Bit#(31) a, Bit#(31) b);
+	Bit#(31) outp = 31'b0;
+	Bit#(1) carry = 1'b0;
+	outp[0] = a[0] ^ b[0];
+	carry = a[0] & b[0];
+	for(Integer i = 1; i < 31; i = i + 1)
+	begin
+		outp[i] = a[i] ^ b[i] ^ carry;
+		carry = (a[i] & b[i]) | (a[i] ^ b[i]) & carry;
+	end
+
+	return outp;
+    endfunction:add_31bits
+    
+    function Bit#(8) add_8bits(Bit#(8) a, Bit#(8) c);
 	Bit#(8) outp = 0;
 	Bit#(1) carry = 0;
 	outp[0] = a[0] ^ c[0];
@@ -34,19 +75,160 @@ module mkfp32_add(Ifc_fp32_add);
 	end
 
 	return outp;
-    endfunction:rca_8bit
+    endfunction:add_8bits
     
     function Bit#(8) twos_compliment(Bit#(8) num);
 	Bit#(8) mask = 8'hFF;
 	Bit#(8) temp = 8'd0;
 	temp = num ^ mask;
-	temp = rca_8bit(temp,1);
+	temp = add_8bits(temp,1);
 	return temp;
     endfunction:twos_compliment
     
-    rule calculate_expdiff(got_A == True && got_B == True && expdiff_calculated == False);
+    rule swap_operands_if_needed(got_A == True && got_B == True && operands_swapped_if_needed == False);
+    	assembled_answer <= False;
+    	operands_swapped_if_needed <= True;
+    	if(fp_a.exponent < fp_b.exponent)
+    	begin
+    		fp_a <= fp_b;
+    		fp_b <= fp_a;
+    	end
+    	else if(fp_a.exponent == fp_b.exponent)
+    	begin
+    		if(fp_a.fraction < fp_b.fraction)
+    		begin
+    			fp_a <= fp_b;
+    			fp_b <= fp_a;
+    		end
+    	end
+    	
+    endrule
+    
+    rule calculate_expdiff(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == False);
+    	temp_A <= {2'b01, fp_a.fraction, 25'b0};
+    	temp_B <= {2'b01, fp_b.fraction, 25'b0};
     	expdiff_calculated <= True;
-    	expdiff <= rca_8bit(fp_a.exponent, twos_compliment(fp_b.exponent));
+    	expdiff <= add_8bits(fp_a.exponent, twos_compliment(fp_b.exponent));
+    endrule
+    
+    rule add_prep(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == False);
+    	//add_done <= True;
+    	add_prep_done <= True;
+    	if(fp_a.sign == fp_b.sign)
+    	begin
+    		sign_c <= fp_a.sign;
+	    	temp_B <= temp_B >> expdiff;
+	    	//temp_sum <= temp_A + temp_B; // TODO replace + in future
+	    	
+	    	//if(temp_sum[48] == 1'b1)
+	    	//begin
+	    	//	fp_a.exponent <= fp_a.exponent + 1; 
+	    	//end
+	    	//round_addition_result <= True;
+    	end
+    endrule
+    
+    rule add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && add_done == False);
+    	add_done <= True;
+    	temp_sum <= temp_A + temp_B; // TODO replace + in future
+    	round_addition_result <= True;
+    endrule
+    
+    function Bit#(31) round(Bit#(50) add_out, Bit#(8) exp);
+	Bit#(31) outp = 31'b0;
+	Bit#(1) round_bit = 1'b0;
+	Bit#(24) rem_nocarry = 24'b0;
+	Bit#(25) rem_withcarry = 25'b0;
+	Bit#(25) carry_type_a = 25'b0;	 
+	Bit#(25) carry_type_b = 25'b0;	 
+	
+	if(add_out[49] == 1'd1) // If carry is generated during addition
+	begin
+		exp = add_8bits(exp, 8'b1);
+		round_bit = add_out[25];
+		// If round bit is 0 truncate the remaining bits
+		if(round_bit == 1'd0)
+		begin
+			outp = zeroExtend(add_out[48:26]);
+		end
+		// If round bit is 1 do the following
+		else
+		begin
+		      rem_withcarry = add_out[24:0]; // To check the remaining bits
+		      if(rem_withcarry == 25'd0 && add_out[26] == 1'd0) // If remaining bits are 0 and LSB is also 0
+		      begin
+  			      	outp = zeroExtend(add_out[48:26]); // Truncate the rest
+		      end
+		      else
+		      begin // If remaining bits are non zero
+		      		carry_type_b = add_25bits(zeroExtend(add_out[49:26]) , 25'b1); // Add one to round up
+		      		if(carry_type_b[24] == 1) // See if the above addition results in a carry
+		      		begin
+		      			exp = add_8bits(exp, 8'b1); // Adjust exponent
+		      			outp = zeroExtend(carry_type_b[23:1]);
+		      		end
+		      		else
+		      		begin // If there is no carry while rounding up
+		      			outp = zeroExtend(carry_type_b[22:0]);
+		      		end
+		      end
+		end 
+		
+	end
+	else  // If carry is not generated during addition
+	begin
+		round_bit = add_out[24];
+		// If round bit is 0 truncate the remaining bits
+		if(round_bit == 1'd0)
+		begin
+			outp = zeroExtend(add_out[47:25]);
+		end
+		// If round bit is 1 do the following
+		else
+		begin
+		      rem_nocarry = add_out[23:0]; // To check the remaining bits
+		      if(rem_nocarry == 24'd0 && add_out[25] == 1'd0) // If remaining bits are 0 and LSB is also 0
+		      begin
+  			      	outp = zeroExtend(add_out[47:25]); // Truncate the rest
+		      end
+		      else
+		      begin // If remaining bits are non zero
+		      		carry_type_a = add_25bits(add_out[49:25], 25'b1); // Add one to round up
+		      		if(carry_type_a[24] == 1) // See if the above addition results in a carry
+		      		begin
+		      			exp = add_8bits(exp, 8'b1); // Adjust exponent
+		      			outp = zeroExtend(carry_type_a[23:1]);
+		      		end
+		      		else
+		      		begin // If there is no carry while rounding up
+		      			outp = zeroExtend(carry_type_a[22:0]);
+		      		end
+		      end
+		end 
+		
+	end
+	outp = add_31bits(outp, (zeroExtend(exp) << 23));
+    return outp;
+    endfunction:round
+    
+    rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_addition_result == True && round_done == False);
+    	round_done <= True;
+    	add_res_with_adj_exp <= round(temp_sum,fp_a.exponent);
+    endrule
+    
+    rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_addition_result == True && round_done == True && assembled_answer == False);
+    	assembled_answer <= True;
+    	got_A <= False;
+    	got_B <= False;
+    	operands_swapped_if_needed <= False;
+    	expdiff_calculated <= False;
+    	add_done <= False;
+    	round_addition_result <= False;
+    	round_done <= False;
+    	add_res_with_adj_exp <= 31'd0;
+    	temp_sum <= 50'd0;
+    	add_prep_done <= False;
+    	fp_c <= Fpnum{ sign: sign_c, exponent: add_res_with_adj_exp[30:23], fraction: add_res_with_adj_exp[22:0] };
     endrule
     
     method Action get_A(Bit#(16) a) if (!got_A);
@@ -59,7 +241,7 @@ module mkfp32_add(Ifc_fp32_add);
         fp_b <= Fpnum{ sign: b[31], exponent: b[30:23], fraction: b[22:0] };
     endmethod
 
-    method Fpnum out_AaddB();
+    method Fpnum out_AaddB() if(assembled_answer == True);
         return fp_c; 
     endmethod
 

@@ -4,7 +4,7 @@ BSCDEFINES=RV64
 VERILOGDIR=verilog/
 BUILDDIR=intermediate/
 
-#include fp32_add_verif/Makefile.verif
+include fp32_add_verif/Makefile.verif
 
 .PHONY: simulate
 simulate: 

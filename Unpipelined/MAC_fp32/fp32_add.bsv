@@ -112,19 +112,11 @@ module mkfp32_add(Ifc_fp32_add);
     endrule
     
     rule add_prep(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == False);
-    	//add_done <= True;
     	add_prep_done <= True;
     	if(fp_a.sign == fp_b.sign)
     	begin
     		sign_c <= fp_a.sign;
 	    	temp_B <= temp_B >> expdiff;
-	    	//temp_sum <= temp_A + temp_B; // TODO replace + in future
-	    	
-	    	//if(temp_sum[48] == 1'b1)
-	    	//begin
-	    	//	fp_a.exponent <= fp_a.exponent + 1; 
-	    	//end
-	    	//round_addition_result <= True;
     	end
     endrule
     

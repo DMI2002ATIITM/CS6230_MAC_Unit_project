@@ -36,8 +36,35 @@ module mkfp32_add(Ifc_fp32_add);
     Reg#(Bool) do_add <- mkReg(False);
     Reg#(Bool) do_sub <- mkReg(False);    
     Reg#(Bool) adj_sub <- mkReg(False);    
-    //Reg#(Bit#(24)) adj_count <- mkReg(0);
     Reg#(Bool) adj_done <- mkReg(False);
+    
+    function Bit#(50) add_50bits(Bit#(50) a, Bit#(50) b);
+	Bit#(50) outp = 50'b0;
+	Bit#(1) carry = 1'b0;
+	outp[0] = a[0] ^ b[0];
+	carry = a[0] & b[0];
+	for(Integer i = 1; i < 50; i = i + 1)
+	begin
+		outp[i] = a[i] ^ b[i] ^ carry;
+		carry = (a[i] & b[i]) | (a[i] ^ b[i]) & carry;
+	end
+
+	return outp;
+    endfunction:add_50bits
+    
+    function Bit#(31) add_31bits(Bit#(31) a, Bit#(31) b);
+	Bit#(31) outp = 31'b0;
+	Bit#(1) carry = 1'b0;
+	outp[0] = a[0] ^ b[0];
+	carry = a[0] & b[0];
+	for(Integer i = 1; i < 31; i = i + 1)
+	begin
+		outp[i] = a[i] ^ b[i] ^ carry;
+		carry = (a[i] & b[i]) | (a[i] ^ b[i]) & carry;
+	end
+
+	return outp;
+    endfunction:add_31bits
         
     function Bit#(25) add_25bits(Bit#(25) a, Bit#(25) b);
 	Bit#(25) outp = 25'b0;
@@ -52,21 +79,6 @@ module mkfp32_add(Ifc_fp32_add);
 
 	return outp;
     endfunction:add_25bits
-
-
-    function Bit#(31) add_31bits(Bit#(31) a, Bit#(31) b);
-	Bit#(31) outp = 31'b0;
-	Bit#(1) carry = 1'b0;
-	outp[0] = a[0] ^ b[0];
-	carry = a[0] & b[0];
-	for(Integer i = 1; i < 31; i = i + 1)
-	begin
-		outp[i] = a[i] ^ b[i] ^ carry;
-		carry = (a[i] & b[i]) | (a[i] ^ b[i]) & carry;
-	end
-
-	return outp;
-    endfunction:add_31bits
     
     function Bit#(8) add_8bits(Bit#(8) a, Bit#(8) c);
 	Bit#(8) outp = 0;
@@ -90,77 +102,37 @@ module mkfp32_add(Ifc_fp32_add);
 	return temp;
     endfunction:twos_compliment
     
-    rule swap_operands_if_needed(got_A == True && got_B == True && operands_swapped_if_needed == False);
-    	assembled_answer <= False;
-    	operands_swapped_if_needed <= True;
-    	if(fp_a.exponent < fp_b.exponent)
-    	begin
-    		fp_a <= fp_b;
-    		fp_b <= fp_a;
-    	end
-    	else if(fp_a.exponent == fp_b.exponent)
-    	begin
-    		if(fp_a.fraction < fp_b.fraction)
-    		begin
-    			fp_a <= fp_b;
-    			fp_b <= fp_a;
-    		end
-    	end
-    	
-    endrule
-    
-    rule calculate_expdiff(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == False);
-    	temp_A <= {2'b01, fp_a.fraction, 25'b0};
-    	temp_B <= {2'b01, fp_b.fraction, 25'b0};
-    	expdiff_calculated <= True;
-    	expdiff <= add_8bits(fp_a.exponent, twos_compliment(fp_b.exponent));
-    endrule
-    
-    rule add_prep(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == False);
-    	add_prep_done <= True;
-    	if(fp_a.sign == fp_b.sign)
-    	begin
-    		sign_c <= fp_a.sign;
-	    	temp_B <= temp_B >> expdiff;
-	    	do_add <= True;
-    	end
-    	else
-    	begin
-	    	sign_c <= fp_a.sign;
-	    	temp_B <= temp_B >> expdiff;
-	    	do_sub <= True;
-    	end
-    endrule
-    
-    rule add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_add == True);
-    	do_add <= False;
-    //	add_done <= True;
-    	temp_sum <= temp_A + temp_B; // TODO replace + in future
-    	round_addition_result <= True;
-    endrule
-    
-    rule sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_sub == True);
-    	do_sub <= False;
-    	//add_done <= True;
-    	temp_sum <= temp_A - temp_B; // TODO replace - in future
-//    	round_subtraction_result <= True;
-	adj_sub <= True;
-    endrule
-    
-    rule adjust_subres(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && adj_sub == True && adj_done == False);
-//    adj_sub <= False;
-	if(temp_sum[48] == 1'b1)
+    function Bit#(8) sub_8bits(Bit#(8) a, Bit#(8) b);
+	Bit#(8) outp = 8'b0;
+	Bit#(1) carry = 1'b0;
+	Bit#(8) comp_b = 8'b0;
+	comp_b = (b ^ '1) + 1;
+	outp[0] = a[0] ^ comp_b[0];
+	carry = a[0] & comp_b[0];
+	for(Integer i = 1; i < 8; i = i + 1)
 	begin
-		adj_done <= True;
-		round_subtraction_result <= True;
+		outp[i] = a[i] ^ comp_b[i] ^ carry;
+		carry = (a[i] & comp_b[i]) | (a[i] ^ comp_b[i]) & carry;
 	end
-	else
-	begin
-		fp_a.exponent <= fp_a.exponent - 1;
-		temp_sum <= temp_sum << 1;
-	end
+
+	return outp;
+    endfunction:sub_8bits
     
-    endrule
+    function Bit#(50) sub_50bits(Bit#(50) a, Bit#(50) b);
+	Bit#(50) outp = 50'b0;
+	Bit#(1) carry = 1'b0;
+	Bit#(50) comp_b = 50'b0;
+	comp_b = (b ^ '1) + 1;
+	outp[0] = a[0] ^ comp_b[0];
+	carry = a[0] & comp_b[0];
+	for(Integer i = 1; i < 50; i = i + 1)
+	begin
+		outp[i] = a[i] ^ comp_b[i] ^ carry;
+		carry = (a[i] & comp_b[i]) | (a[i] ^ comp_b[i]) & carry;
+	end
+
+	return outp;
+    endfunction:sub_50bits
     
     function Bit#(31) round_afteradd(Bit#(50) add_out, Bit#(8) exp);
 	Bit#(31) outp = 31'b0;
@@ -239,7 +211,6 @@ module mkfp32_add(Ifc_fp32_add);
     return outp;
     endfunction:round_afteradd
     
-    
     function Bit#(31) round_aftersub(Bit#(50) sub_out, Bit#(8) exp);
 	Bit#(31) outp = 31'b0;
 	Bit#(1) round_bit = 1'b0;
@@ -317,20 +288,84 @@ module mkfp32_add(Ifc_fp32_add);
     return outp;
     endfunction:round_aftersub
     
+    rule swap_operands_if_needed(got_A == True && got_B == True && operands_swapped_if_needed == False);
+    	assembled_answer <= False;
+    	operands_swapped_if_needed <= True;
+    	if(fp_a.exponent < fp_b.exponent)
+    	begin
+    		fp_a <= fp_b;
+    		fp_b <= fp_a;
+    	end
+    	else if(fp_a.exponent == fp_b.exponent)
+    	begin
+    		if(fp_a.fraction < fp_b.fraction)
+    		begin
+    			fp_a <= fp_b;
+    			fp_b <= fp_a;
+    		end
+    	end
+    	
+    endrule
     
-   // rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_addition_result == True && round_done == False);
+    rule calculate_expdiff(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == False);
+    	temp_A <= {2'b01, fp_a.fraction, 25'b0};
+    	temp_B <= {2'b01, fp_b.fraction, 25'b0};
+    	expdiff_calculated <= True;
+    	expdiff <= add_8bits(fp_a.exponent, twos_compliment(fp_b.exponent));
+    endrule
+    
+    rule add_prep(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == False);
+    	add_prep_done <= True;
+    	if(fp_a.sign == fp_b.sign)
+    	begin
+    		sign_c <= fp_a.sign;
+	    	temp_B <= temp_B >> expdiff;
+	    	do_add <= True;
+    	end
+    	else
+    	begin
+	    	sign_c <= fp_a.sign;
+	    	temp_B <= temp_B >> expdiff;
+	    	do_sub <= True;
+    	end
+    endrule
+    
+    rule add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_add == True);
+    	do_add <= False;
+    	temp_sum <= add_50bits(temp_A, temp_B);
+    	round_addition_result <= True;
+    endrule
+    
+    rule sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_sub == True);
+    	do_sub <= False;
+    	temp_sum <= sub_50bits(temp_A, temp_B);
+	adj_sub <= True;
+    endrule
+    
+    rule adjust_subres(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && adj_sub == True && adj_done == False);
+	if(temp_sum[48] == 1'b1)
+	begin
+		adj_done <= True;
+		round_subtraction_result <= True;
+	end
+	else
+	begin
+		fp_a.exponent <= sub_8bits(fp_a.exponent, 8'b1);
+		temp_sum <= temp_sum << 1;
+	end
+    
+    endrule
+    
     rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_addition_result == True && round_done == False);
     	round_done <= True;
     	add_res_with_adj_exp <= round_afteradd(temp_sum,fp_a.exponent);
     endrule
     
-    //rule round_sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_subtraction_result == True && round_done == False);
     rule round_sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_subtraction_result == True && round_done == False);
     	round_done <= True;
     	add_res_with_adj_exp <= round_aftersub(temp_sum,fp_a.exponent);
     endrule
     
-    //rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && (round_addition_result == True || round_addition_result == True) && round_done == True && assembled_answer == False);
     rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_done == True && assembled_answer == False);
     	assembled_answer <= True;
     	got_A <= False;

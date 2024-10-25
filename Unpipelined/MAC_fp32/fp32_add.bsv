@@ -33,7 +33,12 @@ module mkfp32_add(Ifc_fp32_add);
     Reg#(Bool) assembled_answer <- mkReg(False);
     Reg#(Bit#(1)) sign_c <- mkReg(0);
     Reg#(Bool) add_prep_done <- mkReg(False);
-    
+    Reg#(Bool) do_add <- mkReg(False);
+    Reg#(Bool) do_sub <- mkReg(False);    
+    Reg#(Bool) adj_sub <- mkReg(False);    
+    //Reg#(Bit#(24)) adj_count <- mkReg(0);
+    Reg#(Bool) adj_done <- mkReg(False);
+        
     function Bit#(25) add_25bits(Bit#(25) a, Bit#(25) b);
 	Bit#(25) outp = 25'b0;
 	Bit#(1) carry = 1'b0;
@@ -117,16 +122,47 @@ module mkfp32_add(Ifc_fp32_add);
     	begin
     		sign_c <= fp_a.sign;
 	    	temp_B <= temp_B >> expdiff;
+	    	do_add <= True;
+    	end
+    	else
+    	begin
+	    	sign_c <= fp_a.sign;
+	    	temp_B <= temp_B >> expdiff;
+	    	do_sub <= True;
     	end
     endrule
     
-    rule add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && add_done == False);
-    	add_done <= True;
+    rule add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_add == True);
+    	do_add <= False;
+    //	add_done <= True;
     	temp_sum <= temp_A + temp_B; // TODO replace + in future
     	round_addition_result <= True;
     endrule
     
-    function Bit#(31) round(Bit#(50) add_out, Bit#(8) exp);
+    rule sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_sub == True);
+    	do_sub <= False;
+    	//add_done <= True;
+    	temp_sum <= temp_A - temp_B; // TODO replace - in future
+//    	round_subtraction_result <= True;
+	adj_sub <= True;
+    endrule
+    
+    rule adjust_subres(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && adj_sub == True && adj_done == False);
+//    adj_sub <= False;
+	if(temp_sum[48] == 1'b1)
+	begin
+		adj_done <= True;
+		round_subtraction_result <= True;
+	end
+	else
+	begin
+		fp_a.exponent <= fp_a.exponent - 1;
+		temp_sum <= temp_sum << 1;
+	end
+    
+    endrule
+    
+    function Bit#(31) round_afteradd(Bit#(50) add_out, Bit#(8) exp);
 	Bit#(31) outp = 31'b0;
 	Bit#(1) round_bit = 1'b0;
 	Bit#(24) rem_nocarry = 24'b0;
@@ -201,14 +237,101 @@ module mkfp32_add(Ifc_fp32_add);
 	end
 	outp = add_31bits(outp, (zeroExtend(exp) << 23));
     return outp;
-    endfunction:round
+    endfunction:round_afteradd
     
-    rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_addition_result == True && round_done == False);
+    
+    function Bit#(31) round_aftersub(Bit#(50) sub_out, Bit#(8) exp);
+	Bit#(31) outp = 31'b0;
+	Bit#(1) round_bit = 1'b0;
+	Bit#(24) rem_nocarry = 24'b0;
+	Bit#(23) rem_bits = 23'b0;
+	Bit#(25) carry_type_a = 25'b0;	 
+	Bit#(25) carry_type_b = 25'b0;	 
+	
+	if(sub_out[48] == 1'd0) // If MSB is zero during subtraction
+	begin
+		exp = exp - 8'b1;
+		round_bit = sub_out[23];
+		// If round bit is 0 truncate the remaining bits
+		if(round_bit == 1'd0)
+		begin
+			outp = zeroExtend(sub_out[46:24]);
+		end
+		// If round bit is 1 do the following
+		else
+		begin
+		      rem_bits = sub_out[22:0]; // To check the remaining bits
+		      if(rem_bits == 23'd0 && sub_out[24] == 1'd0) // If remaining bits are 0 and LSB is also 0
+		      begin
+  			      	outp = zeroExtend(sub_out[46:24]); // Truncate the rest
+		      end
+		      else
+		      begin // If remaining bits are non zero
+		      		carry_type_b = add_25bits(zeroExtend(sub_out[47:23]) , 25'b1); // Add one to round up
+		      		if(carry_type_b[24] == 1) // See if the above addition results in a carry
+		      		begin
+		      			exp = add_8bits(exp, 8'b1); // Adjust exponent
+		      			outp = zeroExtend(carry_type_b[23:1]);
+		      		end
+		      		else
+		      		begin // If there is no carry while rounding up
+		      			outp = zeroExtend(carry_type_b[22:0]);
+		      		end
+		      end
+		end 
+		
+	end
+	else  // If MSB is not zero after subtraction
+	begin
+		round_bit = sub_out[24];
+		// If round bit is 0 truncate the remaining bits
+		if(round_bit == 1'd0)
+		begin
+			outp = zeroExtend(sub_out[47:25]);
+		end
+		// If round bit is 1 do the following
+		else
+		begin
+		      rem_nocarry = sub_out[23:0]; // To check the remaining bits
+		      if(rem_nocarry == 24'd0 && sub_out[25] == 1'd0) // If remaining bits are 0 and LSB is also 0
+		      begin
+  			      	outp = zeroExtend(sub_out[47:25]); // Truncate the rest
+		      end
+		      else
+		      begin // If remaining bits are non zero
+		      		carry_type_a = add_25bits(sub_out[49:25], 25'b1); // Add one to round up
+		      		if(carry_type_a[24] == 1) // See if the above addition results in a carry
+		      		begin
+		      			exp = add_8bits(exp, 8'b1); // Adjust exponent
+		      			outp = zeroExtend(carry_type_a[23:1]);
+		      		end
+		      		else
+		      		begin // If there is no carry while rounding up
+		      			outp = zeroExtend(carry_type_a[22:0]);
+		      		end
+		      end
+		end 
+		
+	end
+	outp = add_31bits(outp, (zeroExtend(exp) << 23));
+    return outp;
+    endfunction:round_aftersub
+    
+    
+   // rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_addition_result == True && round_done == False);
+    rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_addition_result == True && round_done == False);
     	round_done <= True;
-    	add_res_with_adj_exp <= round(temp_sum,fp_a.exponent);
+    	add_res_with_adj_exp <= round_afteradd(temp_sum,fp_a.exponent);
     endrule
     
-    rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_addition_result == True && round_done == True && assembled_answer == False);
+    //rule round_sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && round_subtraction_result == True && round_done == False);
+    rule round_sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_subtraction_result == True && round_done == False);
+    	round_done <= True;
+    	add_res_with_adj_exp <= round_aftersub(temp_sum,fp_a.exponent);
+    endrule
+    
+    //rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_done == True && (round_addition_result == True || round_addition_result == True) && round_done == True && assembled_answer == False);
+    rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_done == True && assembled_answer == False);
     	assembled_answer <= True;
     	got_A <= False;
     	got_B <= False;
@@ -216,10 +339,15 @@ module mkfp32_add(Ifc_fp32_add);
     	expdiff_calculated <= False;
     	add_done <= False;
     	round_addition_result <= False;
+    	round_subtraction_result <= False;
+    	do_add <= False;
+    	do_sub <= False;
     	round_done <= False;
     	add_res_with_adj_exp <= 31'd0;
     	temp_sum <= 50'd0;
     	add_prep_done <= False;
+    	adj_done <= False;
+    	adj_sub <= False;
     	fp_c <= Fpnum{ sign: sign_c, exponent: add_res_with_adj_exp[30:23], fraction: add_res_with_adj_exp[22:0] };
     endrule
     

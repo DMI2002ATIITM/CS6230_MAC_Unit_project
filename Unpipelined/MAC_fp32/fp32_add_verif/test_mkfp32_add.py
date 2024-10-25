@@ -64,17 +64,17 @@ async def test_add(dut):
     LABC = []
     
 #    file_ab = open("negAB_output.txt","r")
-    file_ab = open("AB_output.txt","r")
+    file_ab = open("combined_AB_binary.txt","r")
     LAB = file_ab.readlines()
     file_ab.close() 
     
 #    file_c = open("C_binary.txt","r")
-    file_c = open("negC_binary.txt","r")
+    file_c = open("combined_C_binary.txt","r")
     LC = file_c.readlines()
     file_c.close() 
     
 #    file_abc = open("NP_MAC_binary.txt","r")
-    file_abc = open("PN_MAC_binary.txt","r")
+    file_abc = open("combined_MAC_binary.txt","r")
     LABC = file_abc.readlines()
     file_abc.close() 
     

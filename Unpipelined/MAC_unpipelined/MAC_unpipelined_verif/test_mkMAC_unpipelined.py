@@ -69,7 +69,7 @@ async def get_output_int(dut):
 	
 
 @cocotb.test()
-async def test_mul(dut):
+async def test_MAC_unpipelined(dut):
     clock = Clock(dut.CLK, 10, units="us")  
     cocotb.start_soon(clock.start(start_high=False))
     await reset(dut)

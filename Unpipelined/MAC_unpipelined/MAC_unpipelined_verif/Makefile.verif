@@ -1,0 +1,15 @@
+SIM ?= verilator
+TOPLEVEL_LANG ?= verilog
+
+PWD=$(shell pwd)
+
+export PYTHONPATH:=$(PWD)/MAC_unpipelined_verif:$(PYTHONPATH)
+
+VERILOG_SOURCES=$(PWD)/verilog/*.v
+
+EXTRA_ARGS = --trace --trace-structs
+
+TOPLEVEL = mkMAC_unpipelined
+MODULE   := test_mkMAC_unpipelined
+
+include $(shell cocotb-config --makefiles)/Makefile.sim

@@ -3,21 +3,13 @@ package MAC_fp32;
 import bf16_mul ::*;
 import fp32_add ::*;
 
-
 interface Ifc_MAC_fp32;
 method Action get_A(Bit#(16) a);
 method Action get_B(Bit#(16) b);
 method Action get_C(Bit#(32) c);
 method Action get_S1_or_S2(Bit#(1) s1_or_s2);
-//method Bit#(32) output_MAC();
 method Fpnum output_MAC();
 endinterface: Ifc_MAC_fp32
-
-//typedef struct {
-//    Bit#(1) sign;
-//    Bit#(8) exponent;
-//    Bit#(7) fraction;
-//} Bfnum deriving (Bits, Eq);
 
 (* synthesize *)
 module mkMAC_fp32(Ifc_MAC_fp32);
@@ -32,8 +24,7 @@ module mkMAC_fp32(Ifc_MAC_fp32);
     Reg#(Bool) mul_completed <- mkReg(False);
     Reg#(Bit#(1)) rg_S1_or_S2 <- mkReg(0);
     Reg#(Bit#(16)) rg_a <- mkReg(0); 
-    Reg#(Bit#(16)) rg_b <- mkReg(0); 
-    //Reg#(Bfnum) rg_ab <- mkReg(Bfnum{ sign: 1'd0, exponent: 8'd0, fraction: 7'd0}); 
+    Reg#(Bit#(16)) rg_b <- mkReg(0);  
     Reg#(Bit#(16)) rg_ab <- mkReg(0); 
     
     // Float addition
@@ -42,9 +33,7 @@ module mkMAC_fp32(Ifc_MAC_fp32);
     Reg#(Bool) mac_completed <- mkReg(False);
     Reg#(Bool) add_initiated <- mkReg(False);
     Reg#(Fpnum) mac_output <- mkReg(Fpnum{ sign: 1'd0, exponent: 8'd0, fraction: 23'd0}); 
-    
-    
-    
+        
     rule do_mul(got_A == True && got_B == True && got_C == True && mul_initiated == False);
         mul_initiated <= True;
     	fmul.get_A(rg_a);

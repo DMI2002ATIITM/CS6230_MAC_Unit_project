@@ -1,10 +1,10 @@
-TOPFILE=fp32_add.bsv
+TOPFILE=MAC_fp32.bsv
 BSVINCDIR=.:%/Libraries
 BSCDEFINES=RV64
 VERILOGDIR=verilog/
 BUILDDIR=intermediate/
 
-include fp32_add_verif/Makefile.verif
+include MAC_fp32_verif/Makefile.verif
 
 .PHONY: simulate
 simulate: 
@@ -19,7 +19,7 @@ generate_verilog:
 clean_build:
 	@make clean
 	@rm -rf $(VERILOGDIR) $(BUILDDIR)
-	@rm -rf fp32_add_verif/__pycache__
+	@rm -rf MAC_fp32_verif/__pycache__
 	@rm -rf results.xml cov*.yml
 	@rm -rf *.vcd results.xml sim_build
 	@echo "Cleaned"

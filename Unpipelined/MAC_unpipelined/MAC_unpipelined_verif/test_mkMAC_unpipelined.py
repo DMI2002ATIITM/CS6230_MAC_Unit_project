@@ -79,6 +79,7 @@ async def test_mul(dut):
     LAB = []
     
     # Test float
+    print("TESTING FLOAT INPUTS")
     
     file_a = open("combined_A_binary.txt","r")
     LA = file_a.readlines()
@@ -104,6 +105,7 @@ async def test_mul(dut):
     	assert str(rtl_output) == LAB[i].strip("\n")
     	
     # Int MAC test	
+    print("TESTING INTEGER INPUTS")
     LA = []
     LB = []
     LC = []

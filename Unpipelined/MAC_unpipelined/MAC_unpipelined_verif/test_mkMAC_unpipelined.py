@@ -100,6 +100,7 @@ async def test_MAC_unpipelined(dut):
     
     for i in range(len(LA)):
     	await give_input(dut,int(LA[i],2),int(LB[i],2),int(LC[i],2),1)
+    	#await give_input(dut,int("0100000100101100",2),int("0011111110000000",2),int("11000001001011000000000000000000",2),1)
     	rtl_output = await get_output_float(dut)
     	print(str(rtl_output),LAB[i].strip("\n"),f"TESTCASE {i+1}")
     	assert str(rtl_output) == LAB[i].strip("\n")
@@ -141,6 +142,7 @@ async def test_MAC_unpipelined(dut):
     
     for i in range(len(LA)):
         await give_input(dut,LA[i],LB[i],LC[i],0)
+        await give_input(dut,7,1,-7,0)
         rtl_output = await get_output_int(dut)
         print(f"{LA[i]} {LB[i]} {LC[i]} {LO[i]} == {rtl_output}")
         assert rtl_output == LO[i]

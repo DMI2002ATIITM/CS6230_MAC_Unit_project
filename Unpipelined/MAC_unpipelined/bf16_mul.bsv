@@ -33,6 +33,8 @@ module mkbf16_mul(Ifc_bf16_mul);
     Reg#(Bool) assembled_answer <- mkReg(False);
     Reg#(Bit#(15)) man_c_and_final_exp <- mkReg(0);
     Reg#(Bit#(5)) count <- mkReg(8);
+    Reg#(Bool) handle_zero <- mkReg(False);
+    Reg#(Bool) handled_zero <- mkReg(False);
     
     function Bit#(16) rca(Bit#(16) a, Bit#(16) b);
 	Bit#(16) outp = 0;
@@ -193,16 +195,25 @@ module mkbf16_mul(Ifc_bf16_mul);
     return outp;
     endfunction:round
     
-    rule deassert_assembled_answer(assembled_answer == True);
-    	assembled_answer <= False;
+    rule calculate_sign(got_A == True && got_B == True && sign_calculated == False && handle_zero == False);
+    	if((bf_a.exponent == '0 && bf_a.fraction == '0) || (bf_b.exponent == '0 && bf_b.fraction == '0)) // To handle if one of the inputs is zero
+    	begin
+    		handle_zero <= True;
+    	end
+    	else
+    	begin
+	    	sign_calculated <= True;
+	    	sign_c <= bf_a.sign ^ bf_b.sign;
+    	end
     endrule
     
-    rule calculate_sign(got_A == True && got_B == True && sign_calculated == False);
-    	sign_calculated <= True;
-    	sign_c <= bf_a.sign ^ bf_b.sign;
+    rule handle_case_zero(got_A == True && got_B == True && handle_zero == True && handled_zero == False);
+    	assembled_answer <= True;
+    	handled_zero <= True;
+    	bf_c <= Bfnum{ sign: '0, exponent: '0, fraction: '0 };
     endrule
     
-    rule calculate_expone(got_A == True && got_B == True && sign_calculated == True && expone_calculated == False);
+    rule calculate_expone(got_A == True && got_B == True && sign_calculated == True && expone_calculated == False && handle_zero == False);
     	expone_calculated <= True;
     	calculate_mantissa <= True;
     	exp_c <= add_exponents(bf_a.exponent , bf_b.exponent);
@@ -210,7 +221,7 @@ module mkbf16_mul(Ifc_bf16_mul);
     	temp_B <= zeroExtend({1'b1,bf_b.fraction});
     endrule
     
-    rule rl_multiply(got_A == True && got_B == True && count != 5'd0 && sign_calculated == True && expone_calculated == True && calculate_mantissa == True);
+    rule rl_multiply(got_A == True && got_B == True && count != 5'd0 && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && handle_zero == False);
 	if(temp_B[0] == 1)
 	begin
 		temp_prod <= rca(temp_prod , zeroExtend(temp_A));
@@ -220,14 +231,18 @@ module mkbf16_mul(Ifc_bf16_mul);
 	count <= count - 1; 
     endrule
     
-    rule round_nearest(got_A == True && got_B == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && count == 5'd0 && rounding_done == False);
+    rule round_nearest(got_A == True && got_B == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && count == 5'd0 && rounding_done == False && handle_zero == False);
     	rounding_done <= True;
     	man_c_and_final_exp <= round(temp_prod, exp_c);
     	
     endrule
     
-    rule assemble_answer(got_A == True && got_B == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && rounding_done == True && assembled_answer == False);
+    rule assemble_answer(got_A == True && got_B == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && rounding_done == True && assembled_answer == False && handle_zero == False);
     	assembled_answer <= True;
+    	bf_c <= Bfnum{ sign: sign_c, exponent: man_c_and_final_exp[14:7], fraction: man_c_and_final_exp[6:0] };
+    endrule
+    
+    rule deassert_assembled_answer(assembled_answer == True);
     	got_A <= False;
     	got_B <= False;
     	sign_calculated <= False;
@@ -236,7 +251,9 @@ module mkbf16_mul(Ifc_bf16_mul);
     	rounding_done <= False;
     	count <= 5'd8;
     	temp_prod <= 16'd0;
-    	bf_c <= Bfnum{ sign: sign_c, exponent: man_c_and_final_exp[14:7], fraction: man_c_and_final_exp[6:0] };
+    	handle_zero <= False;
+    	assembled_answer <= False;
+    	handled_zero <= False;
     endrule
 
     method Action get_A(Bit#(16) a) if (!got_A);

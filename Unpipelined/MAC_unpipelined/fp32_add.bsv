@@ -38,6 +38,7 @@ module mkfp32_add(Ifc_fp32_add);
     Reg#(Bool) adj_sub <- mkReg(False);    
     Reg#(Bool) adj_done <- mkReg(False);
     Reg#(Bool) handle_zero <- mkReg(False);
+    Reg#(Bool) handle_oneinpzero <- mkReg(False);
     
     function Bit#(50) add_50bits(Bit#(50) a, Bit#(50) b);
 	Bit#(50) outp = 50'b0;
@@ -289,12 +290,20 @@ module mkfp32_add(Ifc_fp32_add);
     return outp;
     endfunction:round_aftersub
     
-    rule swap_operands_if_needed(got_A == True && got_B == True && operands_swapped_if_needed == False && handle_zero == False);
+    rule swap_operands_if_needed(got_A == True && got_B == True && operands_swapped_if_needed == False && handle_zero == False && handle_oneinpzero == False);
     	if(fp_a.exponent == fp_b.exponent && fp_a.fraction == fp_b.fraction && fp_a.sign != fp_b.sign) // Handles special case when addition results in zero
     	begin
     		handle_zero <= True;
 	end
-    	else
+    	else if((fp_a.exponent == '0 && fp_a.fraction == '0) || (fp_b.exponent == '0 && fp_b.fraction == '0)) // Handles special case when one of the inputs is zero
+    	begin
+    		if(fp_b.exponent == '0 && fp_b.fraction == '0)
+    		begin
+    			fp_b.sign <= '0;
+    		end 
+    		handle_oneinpzero <= True;
+    	end
+    	else 
     	begin 
 	    	if(fp_a.exponent < fp_b.exponent)
 	    	begin
@@ -309,18 +318,18 @@ module mkfp32_add(Ifc_fp32_add);
 	    			fp_b <= fp_a;
 	    		end
 	    	end
-	    	operands_swapped_if_needed <= True;
     	end
+    	operands_swapped_if_needed <= True;
     endrule
     
-    rule calculate_expdiff(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == False && handle_zero == False);
+    rule calculate_expdiff(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == False && handle_zero == False && handle_oneinpzero == False);
     	temp_A <= {2'b01, fp_a.fraction, 25'b0};
     	temp_B <= {2'b01, fp_b.fraction, 25'b0};
     	expdiff_calculated <= True;
     	expdiff <= add_8bits(fp_a.exponent, twos_compliment(fp_b.exponent));
     endrule
     
-    rule add_prep(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == False && handle_zero == False);
+    rule add_prep(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == False && handle_zero == False && handle_oneinpzero == False);
     	add_prep_done <= True;
     	if(fp_a.sign == fp_b.sign)
     	begin
@@ -336,19 +345,19 @@ module mkfp32_add(Ifc_fp32_add);
     	end
     endrule
     
-    rule add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_add == True && handle_zero == False);
+    rule add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_add == True && handle_zero == False && handle_oneinpzero == False);
     	do_add <= False;
     	temp_sum <= add_50bits(temp_A, temp_B);
     	round_addition_result <= True;
     endrule
     
-    rule sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_sub == True && handle_zero == False);
+    rule sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && do_sub == True && handle_zero == False && handle_oneinpzero == False);
     	do_sub <= False;
     	temp_sum <= sub_50bits(temp_A, temp_B);
 	adj_sub <= True;
     endrule
     
-    rule adjust_subres(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && adj_sub == True && adj_done == False && handle_zero == False);
+    rule adjust_subres(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && add_prep_done == True && adj_sub == True && adj_done == False && handle_zero == False && handle_oneinpzero == False);
 	if(temp_sum[48] == 1'b1)
 	begin
 		adj_done <= True;
@@ -362,25 +371,31 @@ module mkfp32_add(Ifc_fp32_add);
     
     endrule
     
-    rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_addition_result == True && round_done == False && handle_zero == False);
+    rule round_add(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_addition_result == True && round_done == False && handle_zero == False && handle_oneinpzero == False);
     	round_done <= True;
     	add_res_with_adj_exp <= round_afteradd(temp_sum,fp_a.exponent);
     endrule
     
-    rule round_sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_subtraction_result == True && round_done == False && handle_zero == False);
+    rule round_sub(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_subtraction_result == True && round_done == False && handle_zero == False && handle_oneinpzero == False);
     	round_done <= True;
     	add_res_with_adj_exp <= round_aftersub(temp_sum,fp_a.exponent);
     endrule
     
-    rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_done == True && assembled_answer == False && handle_zero == False);
+    rule assemble_answer(got_A == True && got_B == True && operands_swapped_if_needed == True && expdiff_calculated == True && round_done == True && assembled_answer == False && handle_zero == False && handle_oneinpzero == False);
     	assembled_answer <= True;    	
     	fp_c <= Fpnum{ sign: sign_c, exponent: add_res_with_adj_exp[30:23], fraction: add_res_with_adj_exp[22:0] };
     endrule
     
-    rule handle_zero_case(handle_zero == True);
+    rule handle_zero_case(handle_zero == True && handle_oneinpzero == False);
     	handle_zero <= False;
     	assembled_answer <= True;
     	fp_c <= Fpnum{ sign: '0, exponent: '0, fraction: '0};
+    endrule
+    
+    rule handle_oneinpzero_case(handle_oneinpzero == True);
+    	handle_oneinpzero <= False;
+    	assembled_answer <= True;
+    	fp_c <= Fpnum{ sign: fp_a.sign | fp_b.sign, exponent: fp_a.exponent | fp_b.exponent, fraction: fp_a.fraction | fp_b.fraction};
     endrule
     
     rule deassert_assembled_answer(assembled_answer == True);
@@ -401,6 +416,7 @@ module mkfp32_add(Ifc_fp32_add);
     	adj_done <= False;
     	adj_sub <= False;
     	handle_zero <= False;
+    	handle_oneinpzero <= False;
     endrule
     
     method Action get_A(Bit#(16) a) if (!got_A);

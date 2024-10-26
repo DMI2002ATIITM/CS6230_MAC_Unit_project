@@ -34,7 +34,6 @@ async def reset(dut):
     dut.RST_N.value = 1
     await RisingEdge(dut.CLK)
 
-
 async def give_input(dut,A,B,C,S):
     dut.get_A_a.value = A
     dut.get_B_b.value = B
@@ -49,8 +48,7 @@ async def give_input(dut,A,B,C,S):
     dut.EN_get_A.value = 0
     dut.EN_get_B.value = 0
     dut.EN_get_C.value = 0
-    dut.EN_get_S1_or_S2.value = 0
-    
+    dut.EN_get_S1_or_S2.value = 0    
 
 async def get_output_float(dut):
     await RisingEdge(dut.RDY_output_MAC)
@@ -65,8 +63,6 @@ async def get_output_int(dut):
     else:
         rtl_answer = int(str(rtl_answer),2)
     return rtl_answer
-
-	
 
 @cocotb.test()
 async def test_MAC_unpipelined(dut):
@@ -97,13 +93,63 @@ async def test_MAC_unpipelined(dut):
     LAB = file_MAC.readlines()
     file_MAC.close() 
     
+    # Inserting special cases
     
+    # Float addition results in zero
+    LA = LA[:49] + ["0011111110000000"] + LA[49:]
+    LB = LB[:49] + ["0100000100101100"] + LB[49:]
+    LC = LC[:49] + ["11000001001011000000000000000000"] + LC[49:]
+    LAB = LAB[:49] + ["0"*32] + LAB[49:]
+    
+    # Input A is zero
+    LA = LA[:100] + ["0"*16] + LA[100:]
+    LB = LB[:100] + ["0100000100101100"] + LB[100:]
+    LC = LC[:100] + ["10"*16] + LC[100:]
+    LAB = LAB[:100] + ["10"*16] + LAB[100:]
+    
+    # Input B is zero
+    LA = LA[:1000] + ["0100000100101100"] + LA[1000:]
+    LB = LB[:1000] + ["0"*16] + LB[1000:]
+    LC = LC[:1000] + ["10"*16] + LC[1000:]
+    LAB = LAB[:1000] + ["10"*16] + LAB[1000:]
+    
+    # Input C is zero
+    LA = LA[:1200] + ["0100000100101100"] + LA[1200:]
+    LB = LB[:1200] + ["0011111110000000"] + LB[1200:]
+    LC = LC[:1200] + ["0"*32] + LC[1200:]
+    LAB = LAB[:1200] + ["01000001001011000000000000000000"] + LAB[1200:]
+    
+    # Input A is -ve zero
+    LA = LA[:2000] + ["1"+"0"*15] + LA[2000:]
+    LB = LB[:2000] + ["0100000100101100"] + LB[2000:]
+    LC = LC[:2000] + ["10"*16] + LC[2000:]
+    LAB = LAB[:2000] + ["10"*16] + LAB[2000:]
+    
+    # Input B is -ve zero
+    LA = LA[:3000] + ["0100000100101100"] + LA[3000:]
+    LB = LB[:3000] + ["1"+"0"*15] + LB[3000:]
+    LC = LC[:3000] + ["10"*16] + LC[3000:]
+    LAB = LAB[:3000] + ["10"*16] + LAB[3000:]
+    
+    # Input C is -ve zero
+    LA = LA[:5200] + ["0100000100101100"] + LA[5200:]
+    LB = LB[:5200] + ["0011111110000000"] + LB[5200:]
+    LC = LC[:5200] + ["1"+"0"*31] + LC[5200:]
+    LAB = LAB[:5200] + ["01000001001011000000000000000000"] + LAB[5200:]
+    
+    # All inputs are zero
+    LA = LA[:7200] + ["0"*16] + LA[7200:]
+    LB = LB[:7200] + ["0"*16] + LB[7200:]
+    LC = LC[:7200] + ["0"*32] + LC[7200:]
+    LAB = LAB[:7200] + ["0"*32] + LAB[7200:]
+    
+    count = 0
     for i in range(len(LA)):
     	await give_input(dut,int(LA[i],2),int(LB[i],2),int(LC[i],2),1)
-    	#await give_input(dut,int("0100000100101100",2),int("0011111110000000",2),int("11000001001011000000000000000000",2),1)
     	rtl_output = await get_output_float(dut)
     	print(str(rtl_output),LAB[i].strip("\n"),f"TESTCASE {i+1}")
     	assert str(rtl_output) == LAB[i].strip("\n")
+    	count += 1
     	
     # Int MAC test	
     print("TESTING INTEGER INPUTS")
@@ -138,14 +184,44 @@ async def test_MAC_unpipelined(dut):
          LC.append(eval(C_List[i].strip().strip('\n')))
          
     for i in range(len(O_List)-1):
-         LO.append(eval(O_List[i].strip().strip('\n')))    
+         LO.append(eval(O_List[i].strip().strip('\n')))   
+         
+    # Inserting special cases
     
+    # Int addition results in zero
+    LA = LA[:49] + [25] + LA[49:]
+    LB = LB[:49] + [1] + LB[49:]
+    LC = LC[:49] + [-25] + LC[49:]
+    LO = LO[:49] + [0] + LO[49:]
+    
+    # Input A is zero
+    LA = LA[:100] + [0] + LA[100:]
+    LB = LB[:100] + [7] + LB[100:]
+    LC = LC[:100] + [555] + LC[100:]
+    LO = LO[:100] + [555] + LO[100:]
+    
+    # Input B is zero
+    LA = LA[:500] + [15] + LA[500:]
+    LB = LB[:500] + [0] + LB[500:]
+    LC = LC[:500] + [100] + LC[500:]
+    LO = LO[:500] + [100] + LO[500:]
+    
+    # Input C is zero
+    LA = LA[:700] + [100] + LA[700:]
+    LB = LB[:700] + [-2] + LB[700:]
+    LC = LC[:700] + [0] + LC[700:]
+    LO = LO[:700] + [-200] + LO[700:]
+    
+    # All inputs are zero
+    LA = LA[:900] + [0] + LA[900:]
+    LB = LB[:900] + [0] + LB[900:]
+    LC = LC[:900] + [0] + LC[900:]
+    LO = LO[:900] + [0] + LO[900:]
+    
+        
     for i in range(len(LA)):
         await give_input(dut,LA[i],LB[i],LC[i],0)
-        await give_input(dut,7,1,-7,0)
         rtl_output = await get_output_int(dut)
-        print(f"{LA[i]} {LB[i]} {LC[i]} {LO[i]} == {rtl_output}")
+        print(f"{LA[i]} {LB[i]} {LC[i]} {LO[i]} == {rtl_output}",f"TESTCASE {i+1+count}")
         assert rtl_output == LO[i]
-    	
-    
 

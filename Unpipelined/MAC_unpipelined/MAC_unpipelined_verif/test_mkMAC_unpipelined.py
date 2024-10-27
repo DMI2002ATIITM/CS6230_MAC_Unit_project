@@ -66,9 +66,31 @@ async def get_output_int(dut):
     else:
         rtl_answer = int(str(rtl_answer),2)
     return rtl_answer
+    
+def create_random_float16():
+    S,E = random.randint(0,1),random.randint(0,0xFF)
+    if(E == 0xFF):
+        M = 0
+    else:
+        M = random.randint(0,0x7F)
+    return bfmk(S,E,M)
 
+def create_random_float32():
+    S,E = random.randint(0,1),random.randint(0,0xFF)
+    if(E == 0xFF):
+        M = 0
+    else:
+        M = random.randint(0,0x7FFFFF)
+    return fpmk(S,E,M)
+    
 @cocotb.test()
 async def test_MAC_unpipelined(dut):
+
+    # Choose type of test
+    test_float = 1
+    test_int = 1
+    test_random = 0
+
     clock = Clock(dut.CLK, 10, units="us")  
     cocotb.start_soon(clock.start(start_high=False))
     await reset(dut)
@@ -78,7 +100,6 @@ async def test_MAC_unpipelined(dut):
     LAB = []
     
     # Test float
-    print("TESTING FLOAT INPUTS")
     
     file_a = open("combined_A_binary.txt","r")
     LA = file_a.readlines()
@@ -146,18 +167,63 @@ async def test_MAC_unpipelined(dut):
     LC = LC[:7200] + ["0"*32] + LC[7200:]
     LAB = LAB[:7200] + ["0"*32] + LAB[7200:]
     
+    
+    # Corner cases indentified while analysing coverage
+    bfS = [0,1]*10
+    bfE = [0,0b11111110,0x55,0xAA,0x1,0x2,0x4,0x8,0x10,0x20,0x40,0x80,0xFE,0xFD,0xFB,0xF7,0xEF,0xDF,0xBF,0x7F]
+    bfM = [0,0b1111111,0x55,0x2A,0x1,0x2,0x4,0x8,0x10,0x20,0x40,0x7E,0x7D,0x7B,0x77,0x6F,0x5F,0x3F,0x4,0x7E]
+
+    fpS = [0,1]*10
+    fpE = [0,0b11111110,0x55,0xAA,0x1,0x2,0x4,0x8,0x10,0x20,0x40,0x80,0xFE,0xFD,0xFB,0xF7,0xEF,0xDF,0xBF,0x7F]
+    fpM = [0,0x7FFFFF,0x555555,0x2AAAAA]*5
+
+
+    Bin_A = []
+    Bin_B = []
+    Bin_C = []
+
+    for i in range(20):
+        Bin_A.append(bfmk(bfS[i],bfE[i],bfM[i]))
+        Bin_B.append(bfmk(bfS[i],bfE[i],bfM[i]))
+        Bin_C.append(fpmk(fpS[i],fpE[i],fpM[i])) 
+                  
+    
+    # The below commented lines will produce approx 66 lakhs testcases!
+    #Perm_A = []
+    #Perm_B = []
+    #Perm_C = []
+    #for i in Bin_A:
+    #    for j in Bin_B:
+    #        for k in Bin_C:
+    #            Perm_A.append(i)
+    #            Perm_B.append(j)
+    #            Perm_C.append(k)
+    
     count = 0
-    for i in range(len(LA)):
-    	await give_input(dut,int(LA[i],2),int(LB[i],2),int(LC[i],2),1)
-    	rtl_output = await get_output_float(dut)
-    	assert str(rtl_output) == LAB[i].strip("\n") # assertion between RTL and expected value
-    	RM_output = MAC_fp32_RM(LA[i].strip("\n"),LB[i].strip("\n"),LC[i].strip("\n"))
-    	print("RTL:",str(rtl_output),"EXPECTED:",LAB[i].strip("\n"),"RM:",RM_output,f"TESTCASE {i+1}")
-    	assert str(rtl_output) == RM_output # assertion between RTL and reference model value
-    	count += 1
-    	
+    count_temp = 0
+    if(test_float == 1):
+        print("TESTING FLOAT INPUTS")
+        for i in range(len(LA)):
+            await give_input(dut,int(LA[i],2),int(LB[i],2),int(LC[i],2),1)
+            rtl_output = await get_output_float(dut)
+            assert str(rtl_output) == LAB[i].strip("\n") # assertion between RTL and expected value
+            RM_output = MAC_fp32_RM(LA[i].strip("\n"),LB[i].strip("\n"),LC[i].strip("\n"))
+            print("RTL:",str(rtl_output),"EXPECTED:",LAB[i].strip("\n"),"RM:",RM_output,f"TESTCASE {i+1}")
+            assert str(rtl_output) == RM_output # assertion between RTL and reference model value
+            count += 1
+            
+        for i in range(len(Bin_A)):
+            await give_input(dut,int(Bin_A[i],2),int(Bin_B[i],2),int(Bin_C[i],2),1)
+            rtl_output = await get_output_float(dut)
+            RM_output = MAC_fp32_RM(Bin_A[i],Bin_B[i],Bin_C[i])
+            print("RTL:",str(rtl_output),"RM:",RM_output,f"TESTCASE {i+1+count}")
+            assert str(rtl_output) == RM_output # assertion between RTL and reference model value
+            count_temp += 1
+    
+    count = count + count_temp
+    
     # Int MAC test	
-    print("TESTING INTEGER INPUTS")
+    
     LA = []
     LB = []
     LC = []
@@ -223,20 +289,72 @@ async def test_MAC_unpipelined(dut):
     LC = LC[:900] + [0] + LC[900:]
     LO = LO[:900] + [0] + LO[900:]
     
+    CA = list(range(-128,128))
+    CB = list(range(-128,128))
+    CC = [0,1,-1,0xFFFFFFFF,0x7FFFFFFF,0xAAAAAAAA,0x55555555,4294967294, 4294967293, 4294967291, 4294967287, 4294967279, 4294967263, 4294967231, 4294967167, 4294967039, 4294966783, 4294966271, 4294965247, 4294963199, 4294959103, 4294950911, 4294934527, 4294901759, 4294836223, 4294705151, 4294443007, 4293918719, 4292870143, 4290772991, 4286578687, 4278190079, 4261412863, 4227858431, 4160749567, 4026531839, 3758096383, 3221225471, 2147483647, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152, 4194304, 8388608, 16777216, 33554432, 67108864, 134217728, 268435456, 536870912, 1073741824, 2147483648]*3
+    
+    l = len(CC)
+    for i in range(len(CA)-l):
+        CC.append(CC[random.randint(0,l-1)])
+    
+    count_1 = 0
+    if(test_int == 1):
+        print("TESTING INTEGER INPUTS")
+        for i in range(len(LA)):
+            await give_input(dut,LA[i],LB[i],LC[i],0)
+            rtl_output = await get_output_int(dut)
+            RM_int = MAC_int32_RM(LA[i],LB[i],LC[i])
+            print(f"Inp A: {LA[i]} Inp B: {LB[i]} Inp C: {LC[i]} EXPECTED: {LO[i]} RTL: {rtl_output} RM: {RM_int} TESTCASE {i+1+count}")
+            assert rtl_output == LO[i]   # assertion between RTL and expected value
+            assert rtl_output == RM_int  # assertion between RTL and reference model value
+            count_1 += 1
         
-    for i in range(len(LA)):
-        await give_input(dut,LA[i],LB[i],LC[i],0)
-        rtl_output = await get_output_int(dut)
-        RM_int = MAC_int32_RM(LA[i],LB[i],LC[i])
-        print(f"Inp A: {LA[i]} Inp B: {LB[i]} Inp C: {LC[i]} EXPECTED: {LO[i]} RTL: {rtl_output} RM: {RM_int} TESTCASE {i+1+count}")
-        assert rtl_output == LO[i]   # assertion between RTL and expected value
-        assert rtl_output == RM_int  # assertion between RTL and reference model value
+        count = count + count_1
+        count_1 = 0
         
+        for i in range(len(CA)):
+            await give_input(dut,CA[i],CB[i],CC[i],0)
+            rtl_output = await get_output_int(dut)
+            RM_int = MAC_int32_RM(CA[i],CB[i],CC[i])
+            print(f"Inp A: {CA[i]} Inp B: {CB[i]} Inp C: {CC[i]} RTL: {rtl_output} RM: {RM_int} TESTCASE {i+1+count}")
+            assert rtl_output == RM_int  # assertion between RTL and reference model value
+            count_1 += 1
         
-    coverage_db.export_to_yaml(filename="coverage_MAC_unpipelined.yml")
+    # Random inputs testing	
+    
+    filerand = open("random.txt","w")
+    #S = [random.randint(0,1) for _ in range(5000)]
+    S = [0]*5000
+    
+    if(test_random == 1):
+        print("TESTING RANDOM INPUTS")
+        for i in range(len(S)):
+            if(S[i] == 1):
+                A = create_random_float16()
+                B = create_random_float16()
+                C = create_random_float32()
+                
+                await give_input(dut,int(A,2),int(B,2),int(C,2),1)
+                rtl_output = await get_output_float(dut)
+                RM_output = MAC_fp32_RM(A,B,C)
+                print("RTL:",str(rtl_output),"RM:",RM_output,f"TESTCASE {i+1+count+count_1}")
+                filerand.write("A: "+A+" B: "+B+" C: "+C+" RTL: "+str(rtl_output)+" RM: "+RM_output+"\n")
+                assert str(rtl_output) == RM_output # assertion between RTL and reference model value
+            
         
-        
-        
-    # Random inputs testing
+            elif(S[i] == 0):
+                A = random.randint(-128,127)
+                B = random.randint(-128,127)
+                C = random.randint(-2147483648,2147483647)
+                await give_input(dut,A,B,C,0)
+                rtl_output = await get_output_int(dut)
+                RM_int = MAC_int32_RM(A,B,C)
+                print(f"Inp A: {A} Inp B: {B} Inp C: {C} RTL: {rtl_output} RM: {RM_int} TESTCASE {i+1+count+count_1}")
+                filerand.write("A: "+str(A)+" B: "+str(B)+" C: "+str(C)+" RTL: "+str(rtl_output)+" RM: "+str(RM_int)+"\n")
+                assert rtl_output == RM_int # assertion between RTL and reference model value
+    
+    #coverage_db.export_to_yaml(filename="coverage_MAC_unpipelined_int.yml")
+    
+    
     
 

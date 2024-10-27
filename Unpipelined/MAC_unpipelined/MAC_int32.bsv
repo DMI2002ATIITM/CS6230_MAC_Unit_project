@@ -131,12 +131,12 @@ endrule
 
 method Action get_A(Bit#(16) a) if(got_A == False && mul_completed == False && add_completed == False && imac_completed == False);
 got_A <= True;
-rg_A <= a;
+rg_A <= signExtend(a[7:0]);
 endmethod 
 
 method Action get_B(Bit#(16) b) if(got_B == False && mul_completed == False && add_completed == False && imac_completed == False);
 got_B <= True;
-rg_B <= b;
+rg_B <= signExtend(b[7:0]);
 endmethod 
 
 method Action get_C(Bit#(32) c) if(got_C == False && mul_completed == False && add_completed == False && imac_completed == False);

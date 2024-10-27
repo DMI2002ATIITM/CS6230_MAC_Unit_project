@@ -8,6 +8,7 @@ from cocotb.triggers import RisingEdge, ClockCycles
 import logging as _log
 
 from FLOAT_RM import *
+from INT_RM import *
 
 # Ports:
 # Name                         I/O  size props
@@ -149,10 +150,10 @@ async def test_MAC_unpipelined(dut):
     for i in range(len(LA)):
     	await give_input(dut,int(LA[i],2),int(LB[i],2),int(LC[i],2),1)
     	rtl_output = await get_output_float(dut)
-    	assert str(rtl_output) == LAB[i].strip("\n")
+    	assert str(rtl_output) == LAB[i].strip("\n") # assertion between RTL and expected value
     	RM_output = MAC_fp32_RM(LA[i].strip("\n"),LB[i].strip("\n"),LC[i].strip("\n"))
-    	print(str(rtl_output),LAB[i].strip("\n"),RM_output,f"TESTCASE {i+1}")
-    	assert str(rtl_output) == RM_output
+    	print("RTL:",str(rtl_output),"EXPECTED:",LAB[i].strip("\n"),"RM:",RM_output,f"TESTCASE {i+1}")
+    	assert str(rtl_output) == RM_output # assertion between RTL and reference model value
     	count += 1
     	
     # Int MAC test	
@@ -226,6 +227,8 @@ async def test_MAC_unpipelined(dut):
     for i in range(len(LA)):
         await give_input(dut,LA[i],LB[i],LC[i],0)
         rtl_output = await get_output_int(dut)
-        print(f"{LA[i]} {LB[i]} {LC[i]} {LO[i]} == {rtl_output}",f"TESTCASE {i+1+count}")
-        assert rtl_output == LO[i]
+        RM_int = MAC_int32_RM(LA[i],LB[i],LC[i])
+        print(f"Inp A: {LA[i]} Inp B: {LB[i]} Inp C: {LC[i]} EXPECTED: {LO[i]} RTL: {rtl_output} RM: {RM_int} TESTCASE {i+1+count}")
+        assert rtl_output == LO[i]   # assertion between RTL and expected value
+        assert rtl_output == RM_int  # assertion between RTL and reference model value
 

@@ -353,7 +353,7 @@ async def test_MAC_unpipelined(dut):
                 filerand.write("A: "+str(A)+" B: "+str(B)+" C: "+str(C)+" RTL: "+str(rtl_output)+" RM: "+str(RM_int)+"\n")
                 assert rtl_output == RM_int # assertion between RTL and reference model value
     
-    #coverage_db.export_to_yaml(filename="coverage_MAC_unpipelined_int.yml")
+    coverage_db.export_to_yaml(filename="coverage_MAC_unpipelined.yml")
     
     
     

@@ -11,36 +11,29 @@ def fpmk(S,E,M):
         
         
 
-bfS = [0,1]
+bfS = [0,1]*10
 bfE = [0,0b11111110,0x55,0xAA,0x1,0x2,0x4,0x8,0x10,0x20,0x40,0x80,0xFE,0xFD,0xFB,0xF7,0xEF,0xDF,0xBF,0x7F]
-bfM = [0,0b1111111,0x55,0x2A,0x1,0x2,0x4,0x8,0x10,0x20,0x40,0x7E,0x7D,0x7B,0x77,0x6F,0x5F,0x3F]
+bfM = [0,0b1111111,0x55,0x2A,0x1,0x2,0x4,0x8,0x10,0x20,0x40,0x7E,0x7D,0x7B,0x77,0x6F,0x5F,0x3F,0x4,0x7E]
 
-fpS = [0,1]
+fpS = [0,1]*10
 fpE = [0,0b11111110,0x55,0xAA,0x1,0x2,0x4,0x8,0x10,0x20,0x40,0x80,0xFE,0xFD,0xFB,0xF7,0xEF,0xDF,0xBF,0x7F]
-fpM = [0,0x7FFFFF,0x555555,0x2AAAAA]
+fpM = [0,0x7FFFFF,0x555555,0x2AAAAA]*5
 
 
 Bin_A = []
 Bin_B = []
 Bin_C = []
 
-for i in bfS:
-    for j in bfE:
-        for k in bfM:
-            Bin_A.append(bfmk(i,j,k))
-            Bin_B.append(bfmk(i,j,k))
-            
-for i in fpS:
-    for j in fpE:
-        for k in fpM:
-            Bin_C.append(fpmk(i,j,k))   
+for i in range(20):
+    Bin_A.append(bfmk(bfS[i],bfE[i],bfM[i]))
+    Bin_B.append(bfmk(bfS[i],bfE[i],bfM[i]))
+    Bin_C.append(fpmk(fpS[i],fpE[i],fpM[i])) 
                              
 
 MAC_FLOAT_coverage = coverage_section(
     CoverPoint('top.FLOAT.A', vname='A', bins = Bin_A),
     CoverPoint('top.FLOAT.B', vname='B', bins = Bin_B),
-    CoverPoint('top.FLOAT.C', vname='C', bins = Bin_C),
-    CoverCross('top.FLOAT.cross_cover', items = ['top.FLOAT.A', 'top.FLOAT.B', 'top.FLOAT.C'])
+    CoverPoint('top.FLOAT.C', vname='C', bins = Bin_C)
 )
 
 
@@ -238,7 +231,7 @@ def fp32_add(A,B):
 
         return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
         
-#@MAC_FLOAT_coverage
+@MAC_FLOAT_coverage
 def MAC_fp32_RM(A,B,C):
 # Float multiplication
         if(A[1:] == "0"*15 or B[1:] == "0"*15):

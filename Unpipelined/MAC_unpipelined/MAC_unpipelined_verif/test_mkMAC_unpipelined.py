@@ -101,19 +101,19 @@ async def test_MAC_unpipelined(dut):
     
     # Test float
     
-    file_a = open("combined_A_binary.txt","r")
+    file_a = open("Values/combined_A_binary.txt","r")
     LA = file_a.readlines()
     file_a.close() 
     
-    file_b = open("combined_B_binary.txt","r")
+    file_b = open("Values/combined_B_binary.txt","r")
     LB = file_b.readlines()
     file_b.close() 
     
-    file_c = open("combined_C_binary.txt","r")
+    file_c = open("Values/combined_C_binary.txt","r")
     LC = file_c.readlines()
     file_c.close() 
     
-    file_MAC = open("combined_MAC_binary.txt","r")
+    file_MAC = open("Values/combined_MAC_binary.txt","r")
     LAB = file_MAC.readlines()
     file_MAC.close() 
     
@@ -229,19 +229,19 @@ async def test_MAC_unpipelined(dut):
     LC = []
     LO = []
     
-    A_File = open("A_decimal.txt","r")
+    A_File = open("Values/A_decimal.txt","r")
     A_List = A_File.readlines()
     A_File.close()
     
-    B_File = open("B_decimal.txt","r")
+    B_File = open("Values/B_decimal.txt","r")
     B_List = B_File.readlines()
     B_File.close()
     
-    C_File = open("C_decimal.txt","r")
+    C_File = open("Values/C_decimal.txt","r")
     C_List = C_File.readlines()
     C_File.close()
     
-    O_File = open("MAC_decimal.txt","r")
+    O_File = open("Values/MAC_decimal.txt","r")
     O_List = O_File.readlines()
     O_File.close()
     
@@ -322,7 +322,7 @@ async def test_MAC_unpipelined(dut):
         
     # Random inputs testing	
     
-    filerand = open("random.txt","w")
+    filerand = open("Values/random.txt","w")
     #S = [random.randint(0,1) for _ in range(5000)]
     S = [0]*5000
     

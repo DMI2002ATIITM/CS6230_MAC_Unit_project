@@ -231,4 +231,12 @@ async def test_MAC_unpipelined(dut):
         print(f"Inp A: {LA[i]} Inp B: {LB[i]} Inp C: {LC[i]} EXPECTED: {LO[i]} RTL: {rtl_output} RM: {RM_int} TESTCASE {i+1+count}")
         assert rtl_output == LO[i]   # assertion between RTL and expected value
         assert rtl_output == RM_int  # assertion between RTL and reference model value
+        
+        
+    coverage_db.export_to_yaml(filename="coverage_MAC_unpipelined.yml")
+        
+        
+        
+    # Random inputs testing
+    
 

@@ -1,3 +1,48 @@
+import cocotb
+from cocotb_coverage.coverage import *
+
+
+
+def bfmk(S,E,M):
+    return bin(S)[2:].ljust(1,"0")+bin(E)[2:].ljust(8,"0")+bin(M)[2:].ljust(7,"0")
+    
+def fpmk(S,E,M):
+    return bin(S)[2:].ljust(1,"0")+bin(E)[2:].ljust(8,"0")+bin(M)[2:].ljust(23,"0")
+        
+        
+
+bfS = [0,1]
+bfE = [0,0b11111110]
+bfM = [0,0b1111111]
+
+fpS = [0,1]
+fpE = [0,0b11111110]
+fpM = [0,0x7FFFFF]
+
+
+Bin_A = []
+Bin_B = []
+Bin_C = []
+
+for i in bfS:
+    for j in bfE:
+        for k in bfM:
+            Bin_A.append(bfmk(i,j,k))
+            Bin_B.append(bfmk(i,j,k))
+            
+for i in fpS:
+    for j in fpE:
+        for k in fpM:
+            Bin_C.append(fpmk(i,j,k))            
+
+MAC_FLOAT_coverage = coverage_section(
+    CoverPoint('top.FLOAT.A', vname='A', bins = Bin_A),
+    CoverPoint('top.FLOAT.B', vname='B', bins = Bin_B),
+    CoverPoint('top.FLOAT.C', vname='C', bins = Bin_C),
+    CoverCross('top.FLOAT.cross_cover', items = ['top.FLOAT.A', 'top.FLOAT.B', 'top.FLOAT.C'])
+)
+
+
 def round_bfloat16(A):
     # input and output are str
     A += "0"
@@ -192,6 +237,7 @@ def fp32_add(A,B):
 
         return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
         
+@MAC_FLOAT_coverage
 def MAC_fp32_RM(A,B,C):
 # Float multiplication
         if(A[1:] == "0"*15 or B[1:] == "0"*15):

@@ -7,6 +7,8 @@ from cocotb.clock import Clock
 from cocotb.triggers import RisingEdge, ClockCycles
 import logging as _log
 
+from FLOAT_RM import *
+
 # Ports:
 # Name                         I/O  size props
 # RDY_get_A                      O     1
@@ -147,8 +149,10 @@ async def test_MAC_unpipelined(dut):
     for i in range(len(LA)):
     	await give_input(dut,int(LA[i],2),int(LB[i],2),int(LC[i],2),1)
     	rtl_output = await get_output_float(dut)
-    	print(str(rtl_output),LAB[i].strip("\n"),f"TESTCASE {i+1}")
     	assert str(rtl_output) == LAB[i].strip("\n")
+    	RM_output = MAC_fp32_RM(LA[i].strip("\n"),LB[i].strip("\n"),LC[i].strip("\n"))
+    	print(str(rtl_output),LAB[i].strip("\n"),RM_output,f"TESTCASE {i+1}")
+    	assert str(rtl_output) == RM_output
     	count += 1
     	
     # Int MAC test	

@@ -91,6 +91,9 @@ def bfloat16_mul(A,B):
     
     AB_sign = bin(A_sign ^ B_sign)[2:]
     AB_exp = bin((A_exp + B_exp + bias) & 0xFF)[2:][-8:]
+    
+    if(int(AB_exp,2) > int("11111111",2)):
+        return "EXCEPTION" 
 
     # Multiplication of mantissa
     temp_A = bin(A_frac)[2:]
@@ -114,12 +117,18 @@ def bfloat16_mul(A,B):
     exp_adj = nob_AB - (nob_A + nob_B - 1) 
     AB_exp = bin(int(AB_exp,2) + exp_adj)[2:]
 
+    if(int(AB_exp,2) > int("11111111",2)):
+        return "EXCEPTION" 
+    
+    
     round_ret = round_bfloat16(bin(A_frac * B_frac)[3:])
     if(round_ret[1] == 0):
         AB_frac = round_ret[0]
     else:
         AB_exp = bin(int(AB_exp,2) + round_ret[1])[2:]
         AB_frac = round_ret[0]
+        if(int(AB_exp,2) > int("11111111",2)):
+            return "EXCEPTION" 
 
     return AB_sign + AB_exp.rjust(8,"0") + AB_frac
 
@@ -200,6 +209,10 @@ def fp32_add(A,B):
             # Adjust exponent
             exp_add_diff = len(sum_val) - Blen_bef_add
             A_exp += exp_add_diff
+            if(A_exp > int("11111111",2)):
+                return "EXCEPTION" 
+            
+    	
 
         round_ret = round_fp32(sum_val[1:])
         if(round_ret[1] == 0):
@@ -207,7 +220,10 @@ def fp32_add(A,B):
         else:
             A_exp = bin(int(A_exp,2) + round_ret[1])[2:]
             rounded_sum = round_ret[0]
-
+            if(A_exp > int("11111111",2)):
+                return "EXCEPTION" 
+            
+            
         return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
     else:
         A_frac = A_frac.ljust(Blen_bef_add,"0")
@@ -228,6 +244,8 @@ def fp32_add(A,B):
         else:
             A_exp = A_exp + round_ret[1]
             rounded_sum = round_ret[0]
+            if(A_exp > int("11111111",2)):
+                return "EXCEPTION" 
 
         return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
         
@@ -238,6 +256,8 @@ def MAC_fp32_RM(A,B,C):
                 AB = "0"*16
         else:
                 AB = bfloat16_mul(A,B)   
+                if(AB == "EXCEPTION"):
+                    return "EXCEPTION" 
         
 # Float addition                
         if(C[1:] == "0"*31):

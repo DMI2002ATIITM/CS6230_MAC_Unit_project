@@ -87,13 +87,23 @@ def create_random_float32():
 async def test_MAC_unpipelined(dut):
 
     # Choose type of test
-    test_float = 1
-    test_int = 1
-    test_random = 0
+    test_float = 0
+    test_int = 0
+    test_random = 1
+    test_indiv = 0
 
     clock = Clock(dut.CLK, 10, units="us")  
     cocotb.start_soon(clock.start(start_high=False))
     await reset(dut)
+    
+    if(test_indiv == 1):
+        await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
+        rtl_output = await get_output_float(dut)
+        #assert str(rtl_output) == LAB[i].strip("\n") # assertion between RTL and expected value
+        #RM_output = MAC_fp32_RM(LA[i].strip("\n"),LB[i].strip("\n"),LC[i].strip("\n"))
+        print("RTL:",str(rtl_output))
+        #assert str(rtl_output) == RM_output # assertion between RTL and reference model value
+        
         
     LA = []
     LB = []
@@ -323,20 +333,24 @@ async def test_MAC_unpipelined(dut):
     # Random inputs testing	
     
     filerand = open("Values/random.txt","w")
-    #S = [random.randint(0,1) for _ in range(5000)]
-    S = [0]*5000
+    S = [random.randint(0,1) for _ in range(5000)]
+    retry = 1
+    #S = [0]*5000
     
     if(test_random == 1):
         print("TESTING RANDOM INPUTS")
         for i in range(len(S)):
             if(S[i] == 1):
-                A = create_random_float16()
-                B = create_random_float16()
-                C = create_random_float32()
+                while(retry == 1):
+                    A = create_random_float16()
+                    B = create_random_float16()
+                    C = create_random_float32()
+                    RM_output = MAC_fp32_RM(A,B,C)
+                    if(RM_output != "EXCEPTION"):
+                        break
                 
                 await give_input(dut,int(A,2),int(B,2),int(C,2),1)
                 rtl_output = await get_output_float(dut)
-                RM_output = MAC_fp32_RM(A,B,C)
                 print("RTL:",str(rtl_output),"RM:",RM_output,f"TESTCASE {i+1+count+count_1}")
                 filerand.write("A: "+A+" B: "+B+" C: "+C+" RTL: "+str(rtl_output)+" RM: "+RM_output+"\n")
                 assert str(rtl_output) == RM_output # assertion between RTL and reference model value

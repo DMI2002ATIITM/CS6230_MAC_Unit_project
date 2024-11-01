@@ -333,7 +333,7 @@ async def test_MAC_unpipelined(dut):
     # Random inputs testing	
     
     filerand = open("Values/random.txt","w")
-    S = [random.randint(0,1) for _ in range(5000)]
+    S = [random.randint(0,1) for _ in range(15000)]
     retry = 1
     #S = [0]*5000
     

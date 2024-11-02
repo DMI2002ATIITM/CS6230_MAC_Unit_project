@@ -1,42 +1,44 @@
-package bf16_mul;
+package bf16_mul_pipelined;
 
 import FIFO::*;
 import SpecialFIFOs::*;
 
 import MAC_types ::*;
 
-interface Ifc_bf16_mul;
+interface Ifc_bf16_mul_pipelined;
 method Action get_A(Bit#(16) a);
 method Action get_B(Bit#(16) b);
 method ActionValue#(Bfnum) out_AB();
-endinterface: Ifc_bf16_mul
+endinterface: Ifc_bf16_mul_pipelined
 
 (* synthesize *)
-module mkbf16_mul(Ifc_bf16_mul);
+module mkbf16_mul_pipelined(Ifc_bf16_mul_pipelined);
 
     FIFO#(Bit#(16))     inpA_fifo <- mkPipelineFIFO();
     FIFO#(Bit#(16))     inpB_fifo <- mkPipelineFIFO();
     FIFO#(Bfnum)        out_fifo  <- mkPipelineFIFO();
 
     Reg#(Bfnum) bf_a <- mkReg(Bfnum{ sign: 1'd0, exponent: 8'd0, fraction: 7'd0}); 
-    Reg#(Bfnum) bf_b <- mkReg(Bfnum{ sign: 1'd0, exponent: 8'd0, fraction: 7'd0}); 
-    Reg#(Bool) sign_calculated <- mkReg(False);
-    Reg#(Bool) expone_calculated <- mkReg(False);
-    Reg#(Bool) calculate_mantissa <- mkReg(False);
+    Reg#(Bfnum) bf_b <- mkReg(Bfnum{ sign: 1'd0, exponent: 8'd0, fraction: 7'd0});
+     
     Reg#(Bit#(16)) temp_prod <- mkReg(0);
-    Reg#(Bool) rounding_done <- mkReg(False);
     Reg#(Bit#(16)) temp_A <- mkReg(0);
     Reg#(Bit#(16)) temp_B <- mkReg(0);
     Reg#(Bit#(1)) sign_c <- mkReg(0);
     Reg#(Bit#(8)) exp_c <- mkReg(0);
     Reg#(Bit#(7)) man_c <- mkReg(0);
     Reg#(Bit#(16)) final_output <- mkReg(0);
-    Reg#(Bool) assembled_answer <- mkReg(False);
     Reg#(Bit#(15)) man_c_and_final_exp <- mkReg(0);
-    Reg#(Bit#(5)) count <- mkReg(8);
+    Reg#(Bit#(4)) count <- mkReg(8);
+    
+    Reg#(Bool) init_done <- mkReg(False);
+    Reg#(Bool) sign_calculated <- mkReg(False);
+    Reg#(Bool) expone_calculated <- mkReg(False);
+    Reg#(Bool) calculate_mantissa <- mkReg(False);
+    Reg#(Bool) rounding_done <- mkReg(False);
+    Reg#(Bool) assembled_answer <- mkReg(False);
     Reg#(Bool) handle_zero <- mkReg(False);
     Reg#(Bool) handled_zero <- mkReg(False);
-    Reg#(Bool) init_done <- mkReg(False);
     
     function Bit#(16) rca(Bit#(16) a, Bit#(16) b);
 	Bit#(16) outp = 0;
@@ -193,7 +195,17 @@ module mkbf16_mul(Ifc_bf16_mul);
 	end
 	outp = add_15bits(outp, (zeroExtend(exp) << 7));
     return outp;
-    endfunction:round        
+    endfunction:round 
+    
+    rule init(init_done == False);
+        Bit#(16) a = inpA_fifo.first();
+        Bit#(16) b = inpB_fifo.first();
+        bf_a <= Bfnum{ sign: a[15], exponent: a[14:7], fraction: a[6:0] };
+        bf_b <= Bfnum{ sign: b[15], exponent: b[14:7], fraction: b[6:0] };
+        inpA_fifo.deq();
+        inpB_fifo.deq();
+        init_done <= True;
+    endrule       
     
     rule calculate_sign(init_done == True && sign_calculated == False && handle_zero == False);
     	if((bf_a.exponent == '0 && bf_a.fraction == '0) || (bf_b.exponent == '0 && bf_b.fraction == '0)) // To handle if one of the inputs is zero
@@ -221,7 +233,7 @@ module mkbf16_mul(Ifc_bf16_mul);
     	temp_B <= zeroExtend({1'b1,bf_b.fraction});
     endrule
     
-    rule rl_multiply(init_done == True && count != 5'd0 && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && handle_zero == False);
+    rule rl_multiply(init_done == True && count != 4'd0 && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && handle_zero == False);
 	if(temp_B[0] == 1)
 	begin
 		temp_prod <= rca(temp_prod , zeroExtend(temp_A));
@@ -231,7 +243,7 @@ module mkbf16_mul(Ifc_bf16_mul);
 	count <= count - 1; 
     endrule
     
-    rule round_nearest(init_done == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && count == 5'd0 && rounding_done == False && handle_zero == False);
+    rule round_nearest(init_done == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && count == 4'd0 && rounding_done == False && handle_zero == False);
     	rounding_done <= True;
     	man_c_and_final_exp <= round(temp_prod, exp_c);
     endrule
@@ -246,22 +258,12 @@ module mkbf16_mul(Ifc_bf16_mul);
     	expone_calculated <= False;
     	calculate_mantissa <= False;
     	rounding_done <= False;
-    	count <= 5'd8;
+    	count <= 4'd8;
     	temp_prod <= 16'd0;
     	handle_zero <= False;
     	assembled_answer <= False;
     	handled_zero <= False;
     	init_done <= False;
-    endrule
-
-    rule init(init_done == False);
-        Bit#(16) a = inpA_fifo.first();
-        Bit#(16) b = inpB_fifo.first();
-        bf_a <= Bfnum{ sign: a[15], exponent: a[14:7], fraction: a[6:0] };
-        bf_b <= Bfnum{ sign: b[15], exponent: b[14:7], fraction: b[6:0] };
-        inpA_fifo.deq();
-        inpB_fifo.deq();
-        init_done <= True;
     endrule
 
     method Action get_A(Bit#(16) a);
@@ -278,6 +280,6 @@ module mkbf16_mul(Ifc_bf16_mul);
         return out; 
     endmethod
 
-endmodule: mkbf16_mul
+endmodule: mkbf16_mul_pipelined
 endpackage
 

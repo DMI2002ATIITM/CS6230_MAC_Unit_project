@@ -1,2 +1,2 @@
-mkMAC_fp32
-mkMAC_int32
+mkMAC_fp32_pipelined
+mkMAC_int32_pipelined

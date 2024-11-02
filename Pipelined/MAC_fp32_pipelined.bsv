@@ -1,40 +1,40 @@
-package MAC_fp32;
+package MAC_fp32_pipelined;
 
 import FIFO::*;
 import SpecialFIFOs::*;
 
 import MAC_types ::*;
-import bf16_mul ::*;
-import fp32_add ::*;
+import bf16_mul_pipelined ::*;
+import fp32_add_pipelined ::*;
 
-interface Ifc_MAC_fp32;
+interface Ifc_MAC_fp32_pipelined;
 method Action get_A(Input_16 a);
 method Action get_B(Input_16 b);
 method Action get_C(Input_32 c);
 method ActionValue#(Bit#(32)) foutput_MAC();
-endinterface: Ifc_MAC_fp32
+endinterface: Ifc_MAC_fp32_pipelined
 
 (* synthesize *)
-module mkMAC_fp32(Ifc_MAC_fp32);
+module mkMAC_fp32_pipelined(Ifc_MAC_fp32_pipelined);
 
     FIFO#(Input_16)     inpA_fifo <- mkPipelineFIFO();
     FIFO#(Input_16)     inpB_fifo <- mkPipelineFIFO();
     FIFO#(Input_32)     inpC_fifo <- mkPipelineFIFO();
-    FIFO#(Bit#(16))     ab_fifo <- mkPipelineFIFO();
-    FIFO#(Bit#(32))     abc_fifo <- mkPipelineFIFO();
+    FIFO#(Bit#(16))     ab_fifo   <- mkPipelineFIFO();
+    FIFO#(Bit#(32))     abc_fifo  <- mkPipelineFIFO();
 	
     // Float multiplication
-    Ifc_bf16_mul fmul <- mkbf16_mul;
-    Reg#(Bool) mul_initiated <- mkReg(False);
+    Ifc_bf16_mul_pipelined fmul <- mkbf16_mul_pipelined;
     Reg#(Bit#(16)) rg_a <- mkReg(0); 
     Reg#(Bit#(16)) rg_b <- mkReg(0);  
+    Reg#(Bool) mul_initiated <- mkReg(False);
     
     // Float addition
-    Ifc_fp32_add fadd <- mkfp32_add;
+    Ifc_fp32_add_pipelined fadd <- mkfp32_add_pipelined;
     Reg#(Bit#(32)) rg_c <- mkReg(0); 
-    Reg#(Bool) fmac_completed <- mkReg(False);
-    Reg#(Bool) add_initiated <- mkReg(False);
     Reg#(Bool) init_done <- mkReg(False);
+    Reg#(Bool) add_initiated <- mkReg(False);
+    Reg#(Bool) fmac_completed <- mkReg(False);
     
     rule init(init_done == False);
         rg_a <= pack(inpA_fifo.first());
@@ -53,8 +53,8 @@ module mkMAC_fp32(Ifc_MAC_fp32);
     endrule
     
     rule get_mulres;
-        Bfnum temp <- fmul.out_AB();
-    	ab_fifo.enq(pack(temp));
+        Bfnum mulres_temp <- fmul.out_AB();
+    	ab_fifo.enq(pack(mulres_temp));
     endrule
     
     rule do_add;
@@ -66,7 +66,8 @@ module mkMAC_fp32(Ifc_MAC_fp32);
     endrule
     
     rule get_addres(add_initiated == True);
-    	abc_fifo.enq(pack(fadd.out_AaddB()));
+        Fpnum addres_temp <- fadd.out_AaddB();
+    	abc_fifo.enq(pack(addres_temp));
     	fmac_completed <= True;
     endrule
     
@@ -95,5 +96,5 @@ module mkMAC_fp32(Ifc_MAC_fp32);
         return out;
     endmethod 
 
-endmodule: mkMAC_fp32
+endmodule: mkMAC_fp32_pipelined
 endpackage

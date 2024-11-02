@@ -4,10 +4,10 @@ import FIFO::*;
 import SpecialFIFOs::*;
 
 import MAC_types ::*;
-import MAC_int32 ::*;
-import MAC_fp32 ::*;
-import bf16_mul ::*;
-import fp32_add ::*;
+import MAC_int32_pipelined ::*;
+import MAC_fp32_pipelined  ::*;
+import bf16_mul_pipelined  ::*;
+import fp32_add_pipelined  ::*;
 
 interface Ifc_MAC_pipelined;
 method Action get_A(Input_16 a);
@@ -26,13 +26,13 @@ module mkMAC_pipelined(Ifc_MAC_pipelined);
     FIFO#(Input_1)      inpS_fifo <- mkPipelineFIFO();
     FIFO#(Bit#(32))     out_fifo  <- mkPipelineFIFO();
     
-    Reg#(Input_1) rg_S1_or_S2 <- mkReg(Input_1{val: 1'd0});
-    Reg#(Bool) got_output <- mkReg(False);
     Reg#(Bit#(32)) int_output <- mkReg(0);
+    Reg#(Input_1) rg_S1_or_S2 <- mkReg(Input_1{val: 1'd0});
     Reg#(Fpnum) float_output <- mkReg(Fpnum{ sign: 1'd0, exponent: 8'd0, fraction: 23'd0}); 
+    Reg#(Bool) got_output <- mkReg(False);
     
-    Ifc_MAC_int int_MAC <- mkMAC_int32;
-    Ifc_MAC_fp32 float_MAC <- mkMAC_fp32;
+    Ifc_MAC_int_pipelined  int_MAC   <- mkMAC_int32_pipelined;
+    Ifc_MAC_fp32_pipelined float_MAC <- mkMAC_fp32_pipelined;
     
     rule call_MAC;
         Input_16 inp_A = inpA_fifo.first();

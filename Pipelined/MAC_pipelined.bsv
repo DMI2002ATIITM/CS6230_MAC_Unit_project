@@ -48,9 +48,9 @@ module mkMAC_pipelined(Ifc_MAC_pipelined);
     	end
     	else
     	begin
-    		float_MAC.get_A(inp_A.val);
-    		float_MAC.get_B(inp_B.val);
-    		float_MAC.get_C(inp_C.val);
+    		float_MAC.get_A(inp_A);
+    		float_MAC.get_B(inp_B);
+    		float_MAC.get_C(inp_C);
     	end
     	rg_S1_or_S2.val <= inp_S.val;
     	inpA_fifo.deq();
@@ -65,7 +65,8 @@ module mkMAC_pipelined(Ifc_MAC_pipelined);
     endrule
     
     rule get_output_from_floatMAC(rg_S1_or_S2.val == 1'd1);
-	out_fifo.enq(pack(float_MAC.foutput_MAC()));
+        Bit#(32) temp <- float_MAC.foutput_MAC();
+	out_fifo.enq(temp);
     endrule
 
     method Action get_A(Input_16 a);

@@ -97,7 +97,7 @@ async def test_MAC_pipelined(dut):
     # Choose type of test
     test_float = 1
     test_int = 1
-    test_random = 0
+    test_random = 1
     test_indiv = 0
 
     clock = Clock(dut.CLK, 10, units="us")  

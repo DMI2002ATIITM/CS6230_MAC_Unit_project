@@ -41,8 +41,8 @@ outp[0] = a[0] ^ b[0];
 carry = a[0] & b[0];
 for(Integer i = 1; i < 16; i = i + 1)
 begin
-	outp[i] = a[i] ^ b[i] ^ carry;
-	carry = (a[i] & b[i]) | (a[i] ^ b[i]) & carry;
+    outp[i] = a[i] ^ b[i] ^ carry;
+    carry = (a[i] & b[i]) | (a[i] ^ b[i]) & carry;
 end
 
 return outp;
@@ -55,8 +55,8 @@ outp[0] = ab[0] ^ c[0];
 carry = ab[0] & c[0];
 for(Integer i = 1; i < 32; i = i + 1)
 begin
-	outp[i] = ab[i] ^ c[i] ^ carry;
-	carry = (ab[i] & c[i]) | (ab[i] ^ c[i]) & carry;
+    outp[i] = ab[i] ^ c[i] ^ carry;
+    carry = (ab[i] & c[i]) | (ab[i] ^ c[i]) & carry;
 end
 
 return outp;
@@ -69,36 +69,36 @@ outp[0] = ab[0] ^ c[0];
 carry = ab[0] & c[0];
 for(Integer i = 1; i < 16; i = i + 1)
 begin
-	outp[i] = ab[i] ^ c[i] ^ carry;
-	carry = (ab[i] & c[i]) | (ab[i] ^ c[i]) & carry;
+    outp[i] = ab[i] ^ c[i] ^ carry;
+    carry = (ab[i] & c[i]) | (ab[i] ^ c[i]) & carry;
 end
 
 return outp;
 endfunction:rca_16bit
 
 function Bit#(16) twos_compliment(Bit#(16) num);
-Bit#(16) mask = 16'hFFFF;
-Bit#(16) temp = 16'd0;
-temp = num ^ mask;
-temp = rca_16bit(temp,1);
-return temp;
+    Bit#(16) mask = 16'hFFFF;
+    Bit#(16) temp = 16'd0;
+    temp = num ^ mask;
+    temp = rca_16bit(temp,1);
+    return temp;
 endfunction:twos_compliment
 
 rule rl_multiply(count != 4'd0 && reset_completed == True && mul_init_done == True);
 if(rg_B[0] == 1)
 begin
-	if(count == 4'd1)
-	begin
-		partial_store <= rca(partial_store , signExtend(twos_compliment(rg_A)));
-	end
-	else
-	begin
-		partial_store <= rca(partial_store , signExtend(rg_A));
-	end
+    if(count == 4'd1)
+    begin
+        partial_store <= rca(partial_store , signExtend(twos_compliment(rg_A)));
+    end
+    else
+    begin
+        partial_store <= rca(partial_store , signExtend(rg_A));
+    end
 end
-rg_A <= rg_A << 1;
-rg_B <= rg_B >> 1;
-count <= count - 1; 
+    rg_A <= rg_A << 1;
+    rg_B <= rg_B >> 1;
+    count <= count - 1; 
 endrule
 
 rule mul_done(count == 4'd0 && mul_completed == False && add_completed == False && imac_completed == False);
@@ -119,7 +119,7 @@ endrule
 rule windup(add_completed == True && imac_completed == False);
     add_completed <= False;
     imac_completed <= True;
-    count <= 9;
+    count <= 4'd9;
 endrule
 
 rule reset(imac_completed == True);

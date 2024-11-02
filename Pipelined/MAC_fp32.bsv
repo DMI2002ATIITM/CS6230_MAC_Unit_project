@@ -53,7 +53,8 @@ module mkMAC_fp32(Ifc_MAC_fp32);
     endrule
     
     rule get_mulres;
-    	ab_fifo.enq(pack(fmul.out_AB()));
+        Bfnum temp <- fmul.out_AB();
+    	ab_fifo.enq(pack(temp));
     endrule
     
     rule do_add;

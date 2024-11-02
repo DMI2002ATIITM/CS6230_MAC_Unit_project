@@ -1,24 +1,25 @@
 package bf16_mul;
 
+import FIFO::*;
+import SpecialFIFOs::*;
+
+import MAC_types ::*;
+
 interface Ifc_bf16_mul;
 method Action get_A(Bit#(16) a);
 method Action get_B(Bit#(16) b);
-method Bfnum out_AB();
+method ActionValue#(Bfnum) out_AB();
 endinterface: Ifc_bf16_mul
-
-typedef struct {
-    Bit#(1) sign;
-    Bit#(8) exponent;
-    Bit#(7) fraction;
-} Bfnum deriving (Bits, Eq);
 
 (* synthesize *)
 module mkbf16_mul(Ifc_bf16_mul);
+
+    FIFO#(Bit#(16))     inpA_fifo <- mkPipelineFIFO();
+    FIFO#(Bit#(16))     inpB_fifo <- mkPipelineFIFO();
+    FIFO#(Bfnum)        out_fifo  <- mkPipelineFIFO();
+
     Reg#(Bfnum) bf_a <- mkReg(Bfnum{ sign: 1'd0, exponent: 8'd0, fraction: 7'd0}); 
     Reg#(Bfnum) bf_b <- mkReg(Bfnum{ sign: 1'd0, exponent: 8'd0, fraction: 7'd0}); 
-    Reg#(Bfnum) bf_c <- mkReg(Bfnum{ sign: 1'd0, exponent: 8'd0, fraction: 7'd0}); 
-    Reg#(Bool) got_A <- mkReg(False);
-    Reg#(Bool) got_B <- mkReg(False);
     Reg#(Bool) sign_calculated <- mkReg(False);
     Reg#(Bool) expone_calculated <- mkReg(False);
     Reg#(Bool) calculate_mantissa <- mkReg(False);
@@ -35,6 +36,7 @@ module mkbf16_mul(Ifc_bf16_mul);
     Reg#(Bit#(5)) count <- mkReg(8);
     Reg#(Bool) handle_zero <- mkReg(False);
     Reg#(Bool) handled_zero <- mkReg(False);
+    Reg#(Bool) init_done <- mkReg(False);
     
     function Bit#(16) rca(Bit#(16) a, Bit#(16) b);
 	Bit#(16) outp = 0;
@@ -102,7 +104,6 @@ module mkbf16_mul(Ifc_bf16_mul);
 
 	return outp;
     endfunction:add_9bits
-
 
     function Bit#(15) add_15bits(Bit#(15) a, Bit#(15) b);
 	Bit#(15) outp = 15'b0;
@@ -188,14 +189,13 @@ module mkbf16_mul(Ifc_bf16_mul);
 		      			outp = zeroExtend(carry_type_a[6:0]);
 		      		end
 		      end
-		end 
-		
+		end 	
 	end
 	outp = add_15bits(outp, (zeroExtend(exp) << 7));
     return outp;
-    endfunction:round
+    endfunction:round        
     
-    rule calculate_sign(got_A == True && got_B == True && sign_calculated == False && handle_zero == False);
+    rule calculate_sign(init_done == True && sign_calculated == False && handle_zero == False);
     	if((bf_a.exponent == '0 && bf_a.fraction == '0) || (bf_b.exponent == '0 && bf_b.fraction == '0)) // To handle if one of the inputs is zero
     	begin
     		handle_zero <= True;
@@ -207,13 +207,13 @@ module mkbf16_mul(Ifc_bf16_mul);
     	end
     endrule
     
-    rule handle_case_zero(got_A == True && got_B == True && handle_zero == True && handled_zero == False);
+    rule handle_case_zero(init_done == True && handle_zero == True && handled_zero == False);
     	assembled_answer <= True;
     	handled_zero <= True;
-    	bf_c <= Bfnum{ sign: '0, exponent: '0, fraction: '0 };
+    	out_fifo.enq(Bfnum{ sign: '0, exponent: '0, fraction: '0 });
     endrule
     
-    rule calculate_expone(got_A == True && got_B == True && sign_calculated == True && expone_calculated == False && handle_zero == False);
+    rule calculate_expone(init_done == True && sign_calculated == True && expone_calculated == False && handle_zero == False);
     	expone_calculated <= True;
     	calculate_mantissa <= True;
     	exp_c <= add_exponents(bf_a.exponent , bf_b.exponent);
@@ -221,7 +221,7 @@ module mkbf16_mul(Ifc_bf16_mul);
     	temp_B <= zeroExtend({1'b1,bf_b.fraction});
     endrule
     
-    rule rl_multiply(got_A == True && got_B == True && count != 5'd0 && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && handle_zero == False);
+    rule rl_multiply(init_done == True && count != 5'd0 && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && handle_zero == False);
 	if(temp_B[0] == 1)
 	begin
 		temp_prod <= rca(temp_prod , zeroExtend(temp_A));
@@ -231,20 +231,17 @@ module mkbf16_mul(Ifc_bf16_mul);
 	count <= count - 1; 
     endrule
     
-    rule round_nearest(got_A == True && got_B == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && count == 5'd0 && rounding_done == False && handle_zero == False);
+    rule round_nearest(init_done == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && count == 5'd0 && rounding_done == False && handle_zero == False);
     	rounding_done <= True;
     	man_c_and_final_exp <= round(temp_prod, exp_c);
-    	
     endrule
     
-    rule assemble_answer(got_A == True && got_B == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && rounding_done == True && assembled_answer == False && handle_zero == False);
+    rule assemble_answer(init_done == True && sign_calculated == True && expone_calculated == True && calculate_mantissa == True && rounding_done == True && assembled_answer == False && handle_zero == False);
     	assembled_answer <= True;
-    	bf_c <= Bfnum{ sign: sign_c, exponent: man_c_and_final_exp[14:7], fraction: man_c_and_final_exp[6:0] };
+    	out_fifo.enq(Bfnum{ sign: sign_c, exponent: man_c_and_final_exp[14:7], fraction: man_c_and_final_exp[6:0] });
     endrule
     
     rule deassert_assembled_answer(assembled_answer == True);
-    	got_A <= False;
-    	got_B <= False;
     	sign_calculated <= False;
     	expone_calculated <= False;
     	calculate_mantissa <= False;
@@ -254,20 +251,31 @@ module mkbf16_mul(Ifc_bf16_mul);
     	handle_zero <= False;
     	assembled_answer <= False;
     	handled_zero <= False;
+    	init_done <= False;
     endrule
 
-    method Action get_A(Bit#(16) a) if (!got_A);
-        got_A <= True;
+    rule init(init_done == False);
+        Bit#(16) a = inpA_fifo.first();
+        Bit#(16) b = inpB_fifo.first();
         bf_a <= Bfnum{ sign: a[15], exponent: a[14:7], fraction: a[6:0] };
-    endmethod
-
-    method Action get_B(Bit#(16) b) if (!got_B);
-        got_B <= True;
         bf_b <= Bfnum{ sign: b[15], exponent: b[14:7], fraction: b[6:0] };
+        inpA_fifo.deq();
+        inpB_fifo.deq();
+        init_done <= True;
+    endrule
+
+    method Action get_A(Bit#(16) a);
+        inpA_fifo.enq(a);
     endmethod
 
-    method Bfnum out_AB() if(assembled_answer == True);
-        return bf_c; 
+    method Action get_B(Bit#(16) b);
+        inpB_fifo.enq(b);
+    endmethod
+
+    method ActionValue#(Bfnum) out_AB() if(assembled_answer == True);
+        Bfnum out = out_fifo.first();
+        out_fifo.deq();
+        return out; 
     endmethod
 
 endmodule: mkbf16_mul

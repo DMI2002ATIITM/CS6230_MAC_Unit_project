@@ -1,19 +1,23 @@
 package fp32_add;
 
+import FIFO::*;
+import SpecialFIFOs::*;
+
+import MAC_types ::*;
+
 interface Ifc_fp32_add;
 method Action get_A(Bit#(16) a);
 method Action get_B(Bit#(32) b);
 method Fpnum out_AaddB();
 endinterface: Ifc_fp32_add
 
-typedef struct {
-    Bit#(1) sign;
-    Bit#(8) exponent;
-    Bit#(23) fraction;
-} Fpnum deriving (Bits, Eq);
-
 (* synthesize *)
 module mkfp32_add(Ifc_fp32_add);
+
+    FIFO#(Bit#(32))     inpA_fifo <- mkPipelineFIFO();
+    FIFO#(Bit#(32))     inpB_fifo <- mkPipelineFIFO();
+    FIFO#(Fpnum)        out_fifo  <- mkPipelineFIFO();
+
     Reg#(Fpnum) fp_a <- mkReg(Fpnum{ sign: 1'd0, exponent: 8'd0, fraction: 23'd0}); 
     Reg#(Fpnum) fp_b <- mkReg(Fpnum{ sign: 1'd0, exponent: 8'd0, fraction: 23'd0}); 
     Reg#(Fpnum) fp_c <- mkReg(Fpnum{ sign: 1'd0, exponent: 8'd0, fraction: 23'd0}); 

@@ -12,30 +12,28 @@ This folder contains the bsv design of pipelined MAC unit and its verification e
 
 ### Description of contents:
 #### Folders:
-1. Unpipelined/--------------------> Contains all things related to unpipelined MAC unit 
-2. MAC_unpipelined/----------------> Contains all things which are intended for submition
-3. MAC_unpipelined_verif/----------> Contains Reference models, Makefile and testbench
-4. verilog/------------------------> Contains generated verilog files
-5. Values/-------------------------> Contains the text files used in final verification
-6. Python_scripts/-----------------> Contains the python codes written to help verification of MAC unit
+1. Pipelined/--------------------> Contains all things related to pipelined MAC unit 
+2. MAC_pipelined_verif/----------> Contains Reference models, Makefile and testbench
+3. Python_scripts/-----------------> Contains the python codes written to help verification of pipelined MAC unit
+4. Values/-------------------------> Contains the text files used in final verification
+5. verilog/------------------------> Contains generated verilog files
 
 #### Files:
-MAC_unpipelined/:
-1. MAC_unpipelined.bsv-------------> Contains the Top module which instantiates MAC_int32 and MAC_fp32 within it
-2. MAC_int32.bsv-------------------> Contains Int MAC unit which has both 8 bit multiplier and 32 bit adder implemented as a single module 
-3. MAC_fp32.bsv--------------------> Contains Float MAC unit which instantiates bf16_mul and fp32_add within it
-4. bf16_mul.bsv--------------------> Contains code which can do bf16 multiplication
-5. fp32_add.bsv--------------------> Contains code which can do fp32 addition
-6. Makefile------------------------> Makefile which is used to generate verilog codes from bsv codes
-7. MAC_UNPIPELINED_TEST_RESULT-----> Log file which contains the simulation result of the final run
-8. coverage_MAC_unpipelined.yml----> Contains coverage reports
-9. Manual_float_add_workout.txt----> Contains the rough work done manually in order to understand floating point operations and rounding
+Pipelined/:
+1. MAC_pipelined.bsv-------------------> Contains the Top module which instantiates MAC_int32_pipelined and MAC_fp32_pipelined within it
+2. MAC_int32_pipelined.bsv-------------> Contains pipelined Int MAC unit which has both 8 bit multiplier and 32 bit adder implemented as a single module 
+3. MAC_fp32_pipelined.bsv--------------> Contains pipelined Float MAC unit which instantiates bf16_mul_pipelined and fp32_add_pipelined within it
+4. bf16_mul_pipelined.bsv--------------> Contains pipelined code which can do bf16 multiplication
+5. fp32_add_pipelined.bsv--------------> Contains pipelined code which can do fp32 addition
+6. Makefile------------------------------> Makefile which is used to generate verilog codes from bsv codes
+7. MAC_PIPELINED_TEST_RESULT-----> Log file which contains the simulation result of the final run
+8. MAC_types.bsv----------------------> Contains all the struct definitions
 
-MAC_unpipelined_verif/:
+MAC_pipelined_verif/:
 1. FLOAT_RM.py---------------------> Contains reference model which does float MAC, contains relevant coverage bins
 2. INT_RM.py-----------------------> Contains reference model which does int MAC, contains relevant coverage bins
 3. Makefile.verif------------------> Makefile which is used to simulate
-4. test_mkMAC_unpipelined.py-------> Testbench which drives input to RTL and reference model, checks the RTL output with output of reference model, given testcases and expanded testcases.
+4. test_mkMAC_pipelined.py-------> Testbench which drives input to pipelined RTL and reference model, checks the pipelined RTL output with output of reference model, given testcases, expanded testcases and random testcases.
 
 verilog/:
 1. Contains generated verilog files

@@ -38,7 +38,7 @@ MAC_unpipelined_verif/:
 1. FLOAT_RM.py---------------------> Contains reference model which does float MAC, contains relevant coverage bins
 2. INT_RM.py-----------------------> Contains reference model which does int MAC, contains relevant coverage bins
 3. Makefile.verif------------------> Makefile which is used to simulate
-4. test_mkMAC_unpipelined.py-------> Testbench which drives input to RTL and reference model, checks the RTL output with output of reference model, given testcases and expanded testcases.
+4. test_mkMAC_unpipelined.py-------> Testbench which drives input to RTL and reference model, checks the RTL output with output of  reference model, given testcases, expanded testcases and random testcases.
 
 verilog/:
 1. Contains generated verilog files

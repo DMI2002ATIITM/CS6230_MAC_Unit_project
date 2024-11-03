@@ -1,14 +1,14 @@
-# CS6230_MAC_Unit_project
+# MAC_unpipelined
 
-This repository contains the bsv design of MAC unit and its verification environment.
+This folder contains the bsv design of unpipelined MAC unit and its verification environment.
 
 
 ## Folder structure:
 
-* The below diagram illustrates the folder structure in this repository.
+* The below diagram illustrates the folder structure in this folder.
 * The boxes which are colored are the files/folders which are intended for submition.
 * Blue boxes are folders and green boxes are files
-* The black(colorless) boxes are the folders which contains the files created when this project was in developement(Not indented for submition/obselete).
+* The black(colorless) boxes are the folders which contains the files created when this project was in developement(Not indented for submition/obselete). [MAC_fp32/ and MAC_int32/ are not intended for submition]
 
 ![NEWFOLDERSTRUCTURE drawio](https://github.com/user-attachments/assets/972b6ad6-2f9f-4d1f-aed2-8e4fde61c16d)
 

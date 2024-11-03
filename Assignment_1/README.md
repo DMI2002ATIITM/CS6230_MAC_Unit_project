@@ -16,4 +16,4 @@ This folder contains the bsv design of MAC unit and its verification environment
 2. Pipelined/ -------------------------------------------> Folder Containing all things related to pipelined MAC unit
 
 #### Files:
-1. MAC_Report_NS24Z353_DANIEL_MARK_ISAAC.pdf -----> Project report which contains detailed explanation and summary of assignment_1
+1. MAC_Report_NS24Z353_DANIEL_MARK_ISAAC.pdf -----> Project report which contains detailed summary of work done in assignment_1

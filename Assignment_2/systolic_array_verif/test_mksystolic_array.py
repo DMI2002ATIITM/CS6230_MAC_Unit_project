@@ -128,15 +128,15 @@ async def test_systolic_array(dut):
     await reset(dut)
     
     
-    await give_inputB(dut,1)
-    await give_inputB(dut,2)
-    await give_inputB(dut,3)
     await give_inputB(dut,4)
+    await give_inputB(dut,3)
+    await give_inputB(dut,2)
+    await give_inputB(dut,1)
     
     if(test_indiv == 1):
         #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
         #await give_input(dut,1,2,3,0)
-        await give_inputsansB(dut,1,3,0)
+        await give_inputsansB(dut,2,5,0)
         rtl_output = await get_output_float(dut)
         print("RTL:",str(rtl_output))
 
@@ -146,7 +146,7 @@ async def test_systolic_array(dut):
     await RisingEdge(dut.CLK)
     await RisingEdge(dut.CLK)   
     
-    if(test_indiv == 1):
+    if(test_indiv == 0):
         #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
         #await give_input(dut,3,1,3,0)
         await give_inputsansB(dut,3,3,0)
@@ -160,7 +160,7 @@ async def test_systolic_array(dut):
     await RisingEdge(dut.CLK)
     await RisingEdge(dut.CLK)   
     
-    if(test_indiv == 1):
+    if(test_indiv == 0):
         #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
         #await give_input(dut,3,4,3,0)
         await give_inputsansB(dut,3,7,0)

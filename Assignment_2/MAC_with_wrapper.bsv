@@ -84,6 +84,10 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
 	out_fifo.enq(temp);
     endrule
 
+    rule deassert_send_nxt(send_nxt == True);
+    	send_nxt <= False;
+    endrule
+
     method Action get_A(Input_16 a);
         inpA_fifo.enq(a);
     endmethod

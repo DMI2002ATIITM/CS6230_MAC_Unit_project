@@ -69,6 +69,13 @@ async def give_inputsansB(dut,A,C,S):
     #dut.EN_get_B1.value = 0
     dut.EN_get_C1.value = 0
     dut.EN_get_S1_or_S2.value = 0   
+    
+async def give_inputB(dut,B):
+    dut.get_B1_b.value = B
+    await RisingEdge(dut.CLK)
+    dut.EN_get_B1.value = 1
+    await RisingEdge(dut.CLK)
+    dut.EN_get_B1.value = 0
 
 async def get_output_float(dut):
     await RisingEdge(dut.RDY_output_MAC)
@@ -120,9 +127,16 @@ async def test_systolic_array(dut):
     cocotb.start_soon(clock.start(start_high=False))
     await reset(dut)
     
+    
+    await give_inputB(dut,1)
+    await give_inputB(dut,2)
+    await give_inputB(dut,3)
+    await give_inputB(dut,4)
+    
     if(test_indiv == 1):
         #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
-        await give_input(dut,1,2,3,0)
+        #await give_input(dut,1,2,3,0)
+        await give_inputsansB(dut,1,3,0)
         rtl_output = await get_output_float(dut)
         print("RTL:",str(rtl_output))
 
@@ -131,6 +145,27 @@ async def test_systolic_array(dut):
     await RisingEdge(dut.CLK)
     await RisingEdge(dut.CLK)
     await RisingEdge(dut.CLK)   
+    
+    if(test_indiv == 1):
+        #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
+        #await give_input(dut,3,1,3,0)
+        await give_inputsansB(dut,3,3,0)
+        rtl_output = await get_output_float(dut)
+        print("RTL:",str(rtl_output))
+        
+        
+    await RisingEdge(dut.CLK)
+    await RisingEdge(dut.CLK)
+    await RisingEdge(dut.CLK)
+    await RisingEdge(dut.CLK)
+    await RisingEdge(dut.CLK)   
+    
+    if(test_indiv == 1):
+        #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
+        #await give_input(dut,3,4,3,0)
+        await give_inputsansB(dut,3,7,0)
+        rtl_output = await get_output_float(dut)
+        print("RTL:",str(rtl_output))
     
     #if(test_indiv == 1):
         #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)

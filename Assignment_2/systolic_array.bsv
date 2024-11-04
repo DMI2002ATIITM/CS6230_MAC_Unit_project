@@ -29,19 +29,26 @@ module mksystolic_array(Ifc_systolic_array);
     
     rule start;
         Input_16 inp_A = inpA1_fifo.first();
-        Input_16 inp_B = inpB1_fifo.first();
+        //Input_16 inp_B = inpB1_fifo.first();
         Input_32 inp_C = inpC1_fifo.first();
         Input_1  inp_S = inpS1_fifo.first();
         
         mac_1.get_A(inp_A);
-        mac_1.get_B(inp_B);
+        //mac_1.get_B(inp_B);
         mac_1.get_C(inp_C);
         mac_1.get_S1_or_S2(inp_S);
     	
     	inpA1_fifo.deq();
-    	inpB1_fifo.deq();
+    	//inpB1_fifo.deq();
     	inpC1_fifo.deq();
     	inpS1_fifo.deq();
+    endrule
+    
+    rule startB;
+        
+        Input_16 inp_B = inpB1_fifo.first();
+        mac_1.get_B(inp_B);
+    	inpB1_fifo.deq();
     endrule
     
     rule start3;
@@ -52,12 +59,15 @@ module mksystolic_array(Ifc_systolic_array);
     
     rule start2;
         Input_16 inp_A = mac_1.relay_A();
-        Input_16 inp_B = mac_1.relay_B();
         Input_1  inp_S = mac_1.relay_S();
         
         mac_2.get_A(inp_A);
-        mac_2.get_B(inp_B);
         mac_2.get_S1_or_S2(inp_S);
+    endrule
+    
+    rule start2B;
+        Input_16 inp_B = mac_1.relay_B();
+        mac_2.get_B(inp_B);
     endrule
     
     rule start4;

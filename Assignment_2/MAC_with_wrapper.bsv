@@ -24,7 +24,7 @@ endinterface: Ifc_MAC_with_wrapper
 module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
 
     Wire#(Input_16) wr_A <- mkWire();
-    Wire#(Input_16) wr_B <- mkWire();
+
     Wire#(Input_1)  wr_S <- mkWire();
 
     FIFO#(Input_16)     inpA_fifo <- mkPipelineFIFO();
@@ -38,18 +38,21 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
     Reg#(Fpnum) float_output <- mkReg(Fpnum{ sign: 1'd0, exponent: 8'd0, fraction: 23'd0}); 
     Reg#(Bool) got_output <- mkReg(False);
     Reg#(Input_16) rg_B <- mkReg(Input_16{val: 16'd0});
+    Reg#(Input_16) send_B <- mkReg(Input_16{val: 16'd0});
+    Reg#(Bool) first_data <- mkReg(True);
+    Reg#(Bool) send_nxt <- mkReg(False);
     
     Ifc_MAC_int_pipelined  int_MAC   <- mkMAC_int32_pipelined;
     Ifc_MAC_fp32_pipelined float_MAC <- mkMAC_fp32_pipelined;
     
     rule call_MAC;
         Input_16 inp_A = inpA_fifo.first();
-        //Input_16 inp_B = inpB_fifo.first();
+
         Input_32 inp_C = inpC_fifo.first();
         Input_1  inp_S = inpS_fifo.first();
         
         wr_A <= inp_A;
-        //wr_B <= inp_B;
+
         wr_S <= inp_S;
         
     	if(inp_S.val == 1'd0)
@@ -66,7 +69,7 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
     	end
     	rg_S1_or_S2.val <= inp_S.val;
     	inpA_fifo.deq();
-    	//inpB_fifo.deq();
+
     	inpC_fifo.deq();
     	inpS_fifo.deq();
     endrule
@@ -86,8 +89,17 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
     endmethod
 
     method Action get_B(Input_16 b);
-        //inpB_fifo.enq(b);
-        rg_B <= b;
+    	if(first_data == True)
+    	begin
+	    	rg_B <= b;
+	    	first_data <= False;
+    	end
+    	else
+    	begin
+    		send_B <= rg_B;
+    		rg_B <= b;
+    		send_nxt <= True;
+    	end
     endmethod
     
     method Action get_C(Input_32 c);
@@ -108,8 +120,8 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
     	return wr_A;
     endmethod
     
-    method Input_16 relay_B();
-    	return rg_B;
+    method Input_16 relay_B() if (send_nxt == True);
+    	return send_B;
     endmethod
     
     method Input_1 relay_S();

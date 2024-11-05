@@ -13,6 +13,9 @@ from INT_RM import *
 # Ports:
 # Name                         I/O  size props
 # RDY_get_A1                     O     1
+# RDY_get_A2                     O     1
+# RDY_get_A3                     O     1
+# RDY_get_A4                     O     1
 # RDY_get_B1                     O     1
 # RDY_get_C1                     O     1
 # RDY_get_S1_or_S2               O     1
@@ -21,10 +24,16 @@ from INT_RM import *
 # CLK                            I     1 clock
 # RST_N                          I     1 reset
 # get_A1_a                       I    16
+# get_A2_a                       I    16
+# get_A3_a                       I    16
+# get_A4_a                       I    16
 # get_B1_b                       I    16
 # get_C1_c                       I    32
 # get_S1_or_S2_s1_or_s2          I     1
 # EN_get_A1                      I     1
+# EN_get_A2                      I     1
+# EN_get_A3                      I     1
+# EN_get_A4                      I     1
 # EN_get_B1                      I     1
 # EN_get_C1                      I     1
 # EN_get_S1_or_S2                I     1
@@ -76,6 +85,28 @@ async def give_inputB(dut,B):
     dut.EN_get_B1.value = 1
     await RisingEdge(dut.CLK)
     dut.EN_get_B1.value = 0
+
+async def give_inputAs_Cz_S(dut,A1,A2,A3,A4,S):
+    dut.get_A1_a.value = A1
+    dut.get_A2_a.value = A2
+    dut.get_A3_a.value = A3
+    dut.get_A4_a.value = A4
+    dut.get_C1_c.value = 0
+    dut.get_S1_or_S2_s1_or_s2.value = S
+    await RisingEdge(dut.CLK)
+    dut.EN_get_A1.value = 1
+    dut.EN_get_A2.value = 1
+    dut.EN_get_A3.value = 1
+    dut.EN_get_A4.value = 1
+    dut.EN_get_C1.value = 1
+    dut.EN_get_S1_or_S2.value = 1
+    await RisingEdge(dut.CLK)
+    dut.EN_get_A1.value = 0
+    dut.EN_get_A2.value = 0
+    dut.EN_get_A3.value = 0
+    dut.EN_get_A4.value = 0
+    dut.EN_get_C1.value = 0
+    dut.EN_get_S1_or_S2.value = 0
 
 async def get_output_float(dut):
     await RisingEdge(dut.RDY_output_MAC)
@@ -132,8 +163,11 @@ async def test_systolic_array(dut):
     await give_inputB(dut,3)
     await give_inputB(dut,2)
     await give_inputB(dut,1)
+    await give_inputAs_Cz_S(dut,3,6,9,8,0)
+    rtl_output = await get_output_float(dut)
+    print("RTL:",str(rtl_output))
     
-    if(test_indiv == 1):
+    if(test_indiv == 0):
         #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)
         #await give_input(dut,1,2,3,0)
         await give_inputsansB(dut,2,5,0)

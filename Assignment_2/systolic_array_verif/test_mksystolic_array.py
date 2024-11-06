@@ -153,7 +153,7 @@ async def give_inputB4(dut,B):
 async def give_inputAs_Cz_S(dut,A1,A2,A3,A4,S):
     while True:
     	if(dut.RDY_get_A1.value == 1 and dut.RDY_get_A2.value == 1 and dut.RDY_get_A3.value == 1 and dut.RDY_get_A4.value == 1 and dut.RDY_get_C1.value == 1 and dut.RDY_get_C2.value == 1 and dut.RDY_get_C3.value == 1 and dut.RDY_get_C4.value == 1 and dut.RDY_get_S1.value == 1 and dut.RDY_get_S2.value == 1 and dut.RDY_get_S3.value == 1 and dut.RDY_get_S4.value == 1):
-    	    dut._log.info("CHECK")
+    	    #dut._log.info("CHECK")
     	    #await RisingEdge(dut.CLK)
     	    break
     	await RisingEdge(dut.CLK)
@@ -205,7 +205,7 @@ async def get_output1_float(dut,test):
         await RisingEdge(dut.CLK)
         output = dut.output1_MAC.value
         dut.EN_output1_MAC.value = 0
-        test.out1.append(output)
+        test.out1.append(handle_int(output))
         #return output
     
 async def get_output2_float(dut,test):
@@ -215,7 +215,7 @@ async def get_output2_float(dut,test):
         await RisingEdge(dut.CLK)
         output = dut.output2_MAC.value
         dut.EN_output2_MAC.value = 0
-        test.out2.append(output)
+        test.out2.append(handle_int(output))
         #return output    
 
 async def get_output3_float(dut,test):
@@ -225,7 +225,7 @@ async def get_output3_float(dut,test):
         await RisingEdge(dut.CLK)
         output = dut.output3_MAC.value
         dut.EN_output3_MAC.value = 0
-        test.out3.append(output)
+        test.out3.append(handle_int(output))
         #return output    
         
 async def get_output4_float(dut,test):
@@ -235,7 +235,7 @@ async def get_output4_float(dut,test):
         await RisingEdge(dut.CLK)
         output = dut.output4_MAC.value
         dut.EN_output4_MAC.value = 0
-        test.out4.append(output)
+        test.out4.append(handle_int(output))
         #return output            
 
     
@@ -251,6 +251,28 @@ async def get_output_int(dut):
     else:
         rtl_answer = int(str(rtl_answer),2)
     return rtl_answer
+    
+def handle_int(rtl_answer):
+    str_ans = str(rtl_answer)
+    if(str_ans[0] == "1"):
+        rtl_answer = ((int(str_ans,2) ^ 0xFFFFFFFF) + 1) * -1
+    else:
+        rtl_answer = int(str(rtl_answer),2)
+    return rtl_answer    
+    
+def transpose(A,B,C,D):
+    temp = [A,B,C,D]
+    Out = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+    for i in range(len(temp)):
+        for j in range(len(temp[0])):
+            Out[i][j] = temp [j][i]
+    
+    return Out
+    
+def printm(A):
+    for i in A:
+        print(str(i[0]).rjust(8),str(i[1]).rjust(8),str(i[2]).rjust(8),str(i[3]).rjust(8))    
+            
     
 def create_random_float16():
     S,E = random.randint(0,1),random.randint(0,0xFF)
@@ -316,35 +338,35 @@ async def test_systolic_array(dut):
     #await give_inputAs_Cz_S(dut,0,0,8,0,0)
     #await give_inputAs_Cz_S(dut,0,0,0,0,0)
     
+    # Given example
     await give_inputAs_Cz_S(dut,2,7,-9,0,0)    
     await give_inputAs_Cz_S(dut,0,4,13,0,0)
     await give_inputAs_Cz_S(dut,-16,7,8,0,0)
     await give_inputAs_Cz_S(dut,0,0,0,0,0)
     await give_inputAs_Cz_S(dut,0,0,0,0,0)
-    #await give_inputAs_Cz_S(dut,0,0,8,0,0)
+    
+    # Identity matrix
+    #await give_inputAs_Cz_S(dut,1,0,0,0,0)    
+    #await give_inputAs_Cz_S(dut,0,1,0,0,0)
+    #await give_inputAs_Cz_S(dut,0,0,1,0,0)
+    #await give_inputAs_Cz_S(dut,0,0,0,1,0)
     #await give_inputAs_Cz_S(dut,0,0,0,0,0)
-    
-    await RisingEdge(dut.RDY_output1_MAC)    
-    await RisingEdge(dut.RDY_output1_MAC) 
-    await RisingEdge(dut.RDY_output1_MAC) 
-    await RisingEdge(dut.RDY_output1_MAC) 
-    await RisingEdge(dut.RDY_output1_MAC) 
-    await RisingEdge(dut.RDY_output1_MAC) 
-       
-    
 
-       
-
-    
     while True:
         if(len(test.out1) == 4 and len(test.out2) == 4 and len(test.out3) == 4 and len(test.out4) == 4):
             break
         await RisingEdge(dut.CLK)
 
+    print()
     print(test.out1)
     print(test.out2)
     print(test.out3)
     print(test.out4)
+    
+    print()
+    printm(transpose(test.out1,test.out2,test.out3,test.out4))
+    
+    print()
     
     if(test_indiv == 0):
         #await give_input(dut,int("1110111011110010",2),int("0101000001111100",2),int("11111110011101010000111001110111",2),1)

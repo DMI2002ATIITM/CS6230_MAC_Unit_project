@@ -93,7 +93,5 @@ def sysarray_rm(A,B,S):
         
     return Output
     
-sysarray_rm(A,B,S)    
-    
     
     

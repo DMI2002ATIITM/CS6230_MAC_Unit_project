@@ -317,10 +317,10 @@ async def get_output_matrix(dut,test,file_AB):
         
         if(len(test.out1) == 4 and len(test.out2) == 4 and len(test.out3) == 4 and len(test.out4) == 4):
             if(testcase_odd):
-                print()
-                print("OUTPUT MATRIX: ")
-                printm(transpose(test.out1,test.out2,test.out3,test.out4))
-                print()
+                #print()
+                #print("OUTPUT MATRIX: ")
+                #printm(transpose(test.out1,test.out2,test.out3,test.out4))
+                #print()
                 temp = transpose(test.out1,test.out2,test.out3,test.out4)
                 test.rtl_output.append(temp)
                 file_AB = open("Mat_AB.txt","a+")
@@ -342,11 +342,13 @@ async def test_systolic_array(dut):
     file_B = open("Mat_B.txt","w")
     file_AB = open("Mat_AB.txt","w")
     file_exp = open("Mat_exp.txt","w")
+    file_debug = open("MAT_debug.txt","w")
     
     file_A.close()
     file_B.close()
     file_AB.close()
     file_exp.close()
+    file_debug.close()
 
     file_A = open("Mat_A.txt","a+")
     file_B = open("Mat_B.txt","a+")
@@ -412,8 +414,6 @@ async def test_systolic_array(dut):
             else:   
                 await give_inputAs_Cz_S(dut,0,0,0,0,0) 
                 
-                
-    
             print("                                         TESTCASE:",i+1)
             
             A = []
@@ -433,9 +433,6 @@ async def test_systolic_array(dut):
         file_exp.close()
         assert rm_output == test.rtl_output, "Test failed"
 
-        
-        
-        
     if(cocotb.plusargs["TEST_TYPE"] == "TEST_RANDOM_FLOAT"):	
         
         for i in range(tot_testcases):
@@ -445,6 +442,7 @@ async def test_systolic_array(dut):
                     B.append([create_random_float16(),create_random_float16(),create_random_float16(),create_random_float16()])
                 
                 RM_output = sysarray_rm(A,B,1)
+                #print(RM_output)
                 if(RM_output != "EXCEPTION"):
                     break
                 A = []
@@ -453,24 +451,37 @@ async def test_systolic_array(dut):
         
             await input_MATB(dut,B)
             await input_MATA_S(dut,A,1)
+            
+            file_A.write(str(A)+"\n")
+            file_B.write(str(B)+"\n")
+            temp_float = sysarray_rm(A,B,1)
+            file_exp = open("Mat_exp.txt","a+")
+            file_exp.write(str(temp_float)+"\n")
+            file_exp.close()
+            rm_output.append(temp_float)
             if(i != (tot_testcases-1)):
                 await input_MATA_S(dut,P,1)
             else:   
                 await give_inputAs_Cz_S(dut,0,0,0,0,1) 
-            rm_output.append(sysarray_rm(A,B,1))
     
-            print("                                         ",i)
+            print("                                         TESTCASE:",i+1)
             
             A = []
             B = []
+            
 
         while True:
             await RisingEdge(dut.CLK)
             if(len(test.rtl_output) == tot_testcases):
                 break
 
-        print(rm_output)
-        print(test.rtl_output)
+        #print(rm_output)
+        #print(test.rtl_output)
+        
+        file_A.close()
+        file_B.close()
+        file_AB.close()
+        file_exp.close()
 
         assert rm_output == test.rtl_output, "Test failed"
 

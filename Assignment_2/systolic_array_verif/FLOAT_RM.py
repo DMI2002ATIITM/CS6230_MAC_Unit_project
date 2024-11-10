@@ -94,7 +94,7 @@ def bfloat16_mul(A,B):
     
     if(int(AB_exp,2) > int("11111111",2)):
         return "EXCEPTION" 
-
+        
     # Multiplication of mantissa
     temp_A = bin(A_frac)[2:]
     for i in range(len(temp_A)):
@@ -259,6 +259,10 @@ def MAC_fp32_RM(A,B,C):
                 if(AB == "EXCEPTION"):
                     return "EXCEPTION" 
         
+        if('b' in AB):
+        	return "EXCEPTION"
+        
+        #print(AB)
 # Float addition                
         if(C[1:] == "0"*31):
                 C = "0"*32 
@@ -269,8 +273,12 @@ def MAC_fp32_RM(A,B,C):
         elif(C == "0"*32):
                 return AB.ljust(32,"0")
         else:
-                return fp32_add(AB,C)
+        	temp = fp32_add(AB,C)
+        	if('b' in temp):
+        		return "EXCEPTION"
+        	return temp
                 
-#print(MAC_fp32_RM("0100000100101100","0101010011100101","01000001110010101100001010010000"))
+    
+#print(MAC_fp32_RM("1110000001101100","0110000001001100","00000001010000010000000000000000"))
 	 
 

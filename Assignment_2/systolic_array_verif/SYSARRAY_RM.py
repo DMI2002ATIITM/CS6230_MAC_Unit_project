@@ -34,7 +34,7 @@ def sysarray_rm(A,B,S):
     else:
         for i in range(4):
             # Column 1 
-            mac_1  = MAC_fp32_RM(A[i][0],B[0][0],0)
+            mac_1  = MAC_fp32_RM(A[i][0],B[0][0],"0"*32)
             if (mac_1 == "EXCEPTION"):
                 return "EXCEPTION"
             mac_2  = MAC_fp32_RM(A[i][1],B[1][0],mac_1)
@@ -48,7 +48,7 @@ def sysarray_rm(A,B,S):
                 return "EXCEPTION"
             
             # Column 2
-            mac_5  = MAC_fp32_RM(A[i][0],B[0][1],0)
+            mac_5  = MAC_fp32_RM(A[i][0],B[0][1],"0"*32)
             if (mac_5 == "EXCEPTION"):
                 return "EXCEPTION"
             mac_6  = MAC_fp32_RM(A[i][1],B[1][1],mac_5)
@@ -62,7 +62,7 @@ def sysarray_rm(A,B,S):
                 return "EXCEPTION"
             
             # Column 3
-            mac_9  = MAC_fp32_RM(A[i][0],B[0][2],0)
+            mac_9  = MAC_fp32_RM(A[i][0],B[0][2],"0"*32)
             if (mac_9 == "EXCEPTION"):
                 return "EXCEPTION"
             mac_10 = MAC_fp32_RM(A[i][1],B[1][2],mac_9)
@@ -76,7 +76,7 @@ def sysarray_rm(A,B,S):
                 return "EXCEPTION"
             
             # Column 4
-            mac_13 = MAC_fp32_RM(A[i][0],B[0][3],0)
+            mac_13 = MAC_fp32_RM(A[i][0],B[0][3],"0"*32)
             if (mac_13 == "EXCEPTION"):
                 return "EXCEPTION"
             mac_14 = MAC_fp32_RM(A[i][1],B[1][3],mac_13)

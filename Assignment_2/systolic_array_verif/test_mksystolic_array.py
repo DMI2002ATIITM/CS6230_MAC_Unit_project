@@ -318,8 +318,8 @@ async def get_output_matrix(dut,test,file_AB):
         if(len(test.out1) == 4 and len(test.out2) == 4 and len(test.out3) == 4 and len(test.out4) == 4):
             if(testcase_odd):
                 #print()
-                #print("OUTPUT MATRIX: ")
-                #printm(transpose(test.out1,test.out2,test.out3,test.out4))
+                print("OUTPUT MATRIX: ")
+                printm(transpose(test.out1,test.out2,test.out3,test.out4))
                 #print()
                 temp = transpose(test.out1,test.out2,test.out3,test.out4)
                 test.rtl_output.append(temp)
@@ -354,6 +354,8 @@ async def test_systolic_array(dut):
     file_B = open("Mat_B.txt","a+")
     file_AB = open("Mat_AB.txt","a+")
     
+    
+
 
     clock = Clock(dut.CLK, 10, units="us")  
     cocotb.start_soon(clock.start(start_high=False))
@@ -424,8 +426,6 @@ async def test_systolic_array(dut):
             if(test.all_verified == 1):
                 break
 
-        #print(rm_output)
-        #print(test.rtl_output)
 
         file_A.close()
         file_B.close()
@@ -440,15 +440,15 @@ async def test_systolic_array(dut):
                 for j in range(4):
                     A.append([create_random_float16(),create_random_float16(),create_random_float16(),create_random_float16()])
                     B.append([create_random_float16(),create_random_float16(),create_random_float16(),create_random_float16()])
-                
+                #print("\n*******")
                 RM_output = sysarray_rm(A,B,1)
                 #print(RM_output)
+                #print("\n*******")
                 if(RM_output != "EXCEPTION"):
                     break
                 A = []
                 B = []
             
-        
             await input_MATB(dut,B)
             await input_MATA_S(dut,A,1)
             
@@ -475,8 +475,6 @@ async def test_systolic_array(dut):
             if(len(test.rtl_output) == tot_testcases):
                 break
 
-        #print(rm_output)
-        #print(test.rtl_output)
         
         file_A.close()
         file_B.close()

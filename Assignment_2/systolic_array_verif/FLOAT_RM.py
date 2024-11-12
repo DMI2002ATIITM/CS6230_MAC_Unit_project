@@ -4,10 +4,10 @@ from cocotb_coverage.coverage import *
 
 
 def bfmk(S,E,M):
-    return bin(S)[2:].ljust(1,"0")+bin(E)[2:].ljust(8,"0")+bin(M)[2:].ljust(7,"0")
+    return bin(S)[2:].ljust(1,"0")+bin(E)[2:].rjust(8,"0")+bin(M)[2:].ljust(7,"0")
     
 def fpmk(S,E,M):
-    return bin(S)[2:].ljust(1,"0")+bin(E)[2:].ljust(8,"0")+bin(M)[2:].ljust(23,"0")
+    return bin(S)[2:].ljust(1,"0")+bin(E)[2:].rjust(8,"0")+bin(M)[2:].ljust(23,"0")
         
         
 
@@ -92,7 +92,7 @@ def bfloat16_mul(A,B):
     AB_sign = bin(A_sign ^ B_sign)[2:]
     AB_exp = bin((A_exp + B_exp + bias) & 0xFF)[2:][-8:]
     
-    if(int(AB_exp,2) > int("11111111",2)):
+    if((A_exp + B_exp - 127) > int("11111110",2)):
         return "EXCEPTION" 
         
     # Multiplication of mantissa
@@ -117,7 +117,7 @@ def bfloat16_mul(A,B):
     exp_adj = nob_AB - (nob_A + nob_B - 1) 
     AB_exp = bin(int(AB_exp,2) + exp_adj)[2:]
 
-    if(int(AB_exp,2) > int("11111111",2)):
+    if(int(AB_exp,2) > int("11111110",2)):
         return "EXCEPTION" 
     
     
@@ -127,7 +127,7 @@ def bfloat16_mul(A,B):
     else:
         AB_exp = bin(int(AB_exp,2) + round_ret[1])[2:]
         AB_frac = round_ret[0]
-        if(int(AB_exp,2) > int("11111111",2)):
+        if(int(AB_exp,2) > int("11111110",2)):
             return "EXCEPTION" 
 
     return AB_sign + AB_exp.rjust(8,"0") + AB_frac
@@ -209,18 +209,17 @@ def fp32_add(A,B):
             # Adjust exponent
             exp_add_diff = len(sum_val) - Blen_bef_add
             A_exp += exp_add_diff
-            if(A_exp > int("11111111",2)):
+            if(A_exp > int("11111110",2)):
                 return "EXCEPTION" 
-            
-    	
 
         round_ret = round_fp32(sum_val[1:])
         if(round_ret[1] == 0):
             rounded_sum = round_ret[0]
         else:
-            A_exp = bin(int(A_exp,2) + round_ret[1])[2:]
+            
+            A_exp = A_exp + round_ret[1]
             rounded_sum = round_ret[0]
-            if(A_exp > int("11111111",2)):
+            if(A_exp > int("11111110",2)):
                 return "EXCEPTION" 
             
             
@@ -237,6 +236,8 @@ def fp32_add(A,B):
             # Adjust exponent
             exp_sub_diff = len(diff_val) - Blen_bef_add
             A_exp -= abs(exp_sub_diff)
+            if(A_exp < 0):
+                return "EXCEPTION"
 
         round_ret = round_fp32(diff_val[1:])
         if(round_ret[1] == 0):
@@ -244,7 +245,7 @@ def fp32_add(A,B):
         else:
             A_exp = A_exp + round_ret[1]
             rounded_sum = round_ret[0]
-            if(A_exp > int("11111111",2)):
+            if(A_exp > int("11111110",2)):
                 return "EXCEPTION" 
 
         return A_sign + bin(A_exp)[2:].rjust(8,"0") + rounded_sum
@@ -257,12 +258,14 @@ def MAC_fp32_RM(A,B,C):
         else:
                 AB = bfloat16_mul(A,B)   
                 if(AB == "EXCEPTION"):
-                    return "EXCEPTION" 
+                	return "EXCEPTION" 
         
-        if('b' in AB):
-        	return "EXCEPTION"
+        ##if('b' in AB):
+        #	print("Here 2")
+        #	return "EXCEPTION"
         
         #print(AB)
+        
 # Float addition                
         if(C[1:] == "0"*31):
                 C = "0"*32 
@@ -274,11 +277,11 @@ def MAC_fp32_RM(A,B,C):
                 return AB.ljust(32,"0")
         else:
         	temp = fp32_add(AB,C)
-        	if('b' in temp):
-        		return "EXCEPTION"
+        	##if('b' in temp):
+        	#	return "EXCEPTION"
         	return temp
                 
-    
-#print(MAC_fp32_RM("1110000001101100","0110000001001100","00000001010000010000000000000000"))
+        
+print(MAC_fp32_RM("1011100111100100","0011010011101011","10101110001110111111111111111111"))
 	 
 

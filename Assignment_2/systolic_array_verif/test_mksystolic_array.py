@@ -195,11 +195,7 @@ def printm(A):
         print(str(i[0]).rjust(8),str(i[1]).rjust(8),str(i[2]).rjust(8),str(i[3]).rjust(8))    
     
 def create_random_float16():
-    S,E = random.randint(0,1),random.randint(0,0xFF)
-    if(E == 0xFF):
-        M = 0
-    else:
-        M = random.randint(0,0x7F)
+    S,E,M = random.randint(0,1),random.randint(0,0x7F),random.randint(0,0x7F)
     return bfmk(S,E,M)
 
 def create_random_float32():

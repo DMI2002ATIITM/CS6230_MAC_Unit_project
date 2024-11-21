@@ -107,23 +107,7 @@ async def give_input(dut,A,B,C,S):
     dut.EN_get_A1.value = 0
     dut.EN_get_B1.value = 0
     dut.EN_get_C1.value = 0
-    dut.EN_get_S1.value = 0    
-    
-async def give_inputsansB(dut,A,C,S):
-    dut.get_A1_a.value = A
-    #dut.get_B1_b.value = B
-    dut.get_C1_c.value = C
-    dut.get_S1_s.value = S
-    await RisingEdge(dut.CLK)
-    dut.EN_get_A1.value = 1
-    #dut.EN_get_B1.value = 1
-    dut.EN_get_C1.value = 1
-    dut.EN_get_S1.value = 1
-    await RisingEdge(dut.CLK)
-    dut.EN_get_A1.value = 0
-    #dut.EN_get_B1.value = 0
-    dut.EN_get_C1.value = 0
-    dut.EN_get_S1.value = 0   
+    dut.EN_get_S1.value = 0     
     
 async def get_output1(dut,test,S):
     while True:

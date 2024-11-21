@@ -341,7 +341,7 @@ async def test_systolic_array(dut):
     cocotb.start_soon(clock.start(start_high=False))
     await reset(dut)
     
-    if(cocotb.plusargs["TEST_TYPE"] not in ["TEST_RANDOM_INT","TEST_RANDOM_FLOAT"]):
+    if(cocotb.plusargs["TEST_TYPE"] not in ["TEST_RANDOM_INT","TEST_RANDOM_FLOAT","TEST_IDENTITY_INT","TEST_IDENTITY_FLOAT"]):
         error = 1
         print()
         print("***********************************************************************************************")
@@ -349,6 +349,8 @@ async def test_systolic_array(dut):
         print("The valid test types are:")
         print("                         * TEST_RANDOM_INT") 
         print("                         * TEST_RANDOM_FLOAT") 
+        print("                         * TEST_IDENTITY_INT")
+        print("                         * TEST_IDENTITY_FLOAT")
         print("***********************************************************************************************")
         print()
         assert error == 0, "Invalid arguments given, check for syntax, spelling given in arguments"
@@ -356,6 +358,10 @@ async def test_systolic_array(dut):
     if(cocotb.plusargs["TEST_TYPE"] == "TEST_RANDOM_INT"):
         S = 0
     if(cocotb.plusargs["TEST_TYPE"] == "TEST_RANDOM_FLOAT"):
+        S = 1
+    if(cocotb.plusargs["TEST_TYPE"] == "TEST_IDENTITY_INT"):
+        S = 0
+    if(cocotb.plusargs["TEST_TYPE"] == "TEST_IDENTITY_FLOAT"):
         S = 1
     
     tot_testcases = int(cocotb.plusargs["TESTCASES"])
@@ -464,6 +470,91 @@ async def test_systolic_array(dut):
         assert rm_output == test.rtl_output, "Test failed"
 
     
+    if(cocotb.plusargs["TEST_TYPE"] == "TEST_IDENTITY_INT"):	
+        A = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]
+        for i in range(tot_testcases):
+            for j in range(4):
+                B.append([random.randint(-128,127),random.randint(-128,127),random.randint(-128,127),random.randint(-128,127)])
+            
+            await input_MATB(dut,B)
+            await input_MATA_S(dut,A,0)
+            file_A.write(str(A)+"\n")
+            file_B.write(str(B)+"\n")
+            print("\nB Matrix:",B)
+            temp_int = sysarray_rm(A,B,0)
+            file_exp = open("Mat_exp.txt","a+")
+            file_exp.write(str(temp_int)+"\n")
+            file_exp.close()
+            rm_output.append(temp_int)
+            if(i != (tot_testcases-1)):
+                await input_MATA_S(dut,P,0)
+            else:   
+                await give_inputAs_Cz_S(dut,0,0,0,0,0) 
+                
+            print("                                         TESTCASE:",i+1)
+            
+            
+            B = []
+        
+        while True:
+            await RisingEdge(dut.CLK)
+            if(test.all_verified == 1):
+                break
+
+
+        file_A.close()
+        file_B.close()
+        file_AB.close()
+        file_exp.close()
+        assert rm_output == test.rtl_output, "Test failed"
+
     
+    if(cocotb.plusargs["TEST_TYPE"] == "TEST_IDENTITY_FLOAT"):	
+        A = [["0011111110000000","0000000000000000","0000000000000000","0000000000000000"],["0000000000000000","0011111110000000","0000000000000000","0000000000000000"],["0000000000000000","0000000000000000","0011111110000000","0000000000000000"],["0000000000000000","0000000000000000","0000000000000000","0011111110000000"]]
+        for i in range(tot_testcases):
+            while True:
+                for j in range(4):
+                    B.append([create_random_float16(),create_random_float16(),create_random_float16(),create_random_float16()])
+                #print("\n*******")
+                RM_output = sysarray_rm(A,B,1)
+                #print(RM_output)
+                #print("\n*******")
+                if(RM_output != "EXCEPTION"):
+                    break
+                B = []
+            
+            await input_MATB(dut,B)
+            await input_MATA_S(dut,A,1)
+            
+            file_A.write(str(A)+"\n")
+            file_B.write(str(B)+"\n")
+            print("\nB Matrix:",B)
+            temp_float = sysarray_rm(A,B,1)
+            file_exp = open("Mat_exp.txt","a+")
+            file_exp.write(str(temp_float)+"\n")
+            file_exp.close()
+            rm_output.append(temp_float)
+            if(i != (tot_testcases-1)):
+                await input_MATA_S(dut,P,1)
+            else:   
+                await give_inputAs_Cz_S(dut,0,0,0,0,1) 
+    
+            print("                                         TESTCASE:",i+1)
+            
+            B = []
+            
+
+        while True:
+            await RisingEdge(dut.CLK)
+            if(len(test.rtl_output) == tot_testcases):
+                break
+
+        
+        file_A.close()
+        file_B.close()
+        file_AB.close()
+        file_exp.close()
+
+        assert rm_output == test.rtl_output, "Test failed"
     
 

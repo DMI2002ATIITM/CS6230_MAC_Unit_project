@@ -24,11 +24,9 @@ endinterface: Ifc_MAC_with_wrapper
 module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
 
     Wire#(Input_16) wr_A <- mkWire();
-
     Wire#(Input_1)  wr_S <- mkWire();
 
     FIFO#(Input_16)     inpA_fifo <- mkPipelineFIFO();
-    FIFO#(Input_16)     inpB_fifo <- mkPipelineFIFO();
     FIFO#(Input_32)     inpC_fifo <- mkPipelineFIFO();
     FIFO#(Input_1)      inpS_fifo <- mkPipelineFIFO();
     FIFO#(Bit#(32))     out_fifo  <- mkPipelineFIFO();
@@ -52,7 +50,6 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
         Input_1  inp_S = inpS_fifo.first();
         
         wr_A <= inp_A;
-
         wr_S <= inp_S;
         
     	if(inp_S.val == 1'd0)
@@ -68,8 +65,8 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
     		float_MAC.get_C(inp_C);
     	end
     	rg_S1_or_S2.val <= inp_S.val;
+    	
     	inpA_fifo.deq();
-
     	inpC_fifo.deq();
     	inpS_fifo.deq();
     endrule

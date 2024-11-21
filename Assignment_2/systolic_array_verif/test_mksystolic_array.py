@@ -11,15 +11,6 @@ from FLOAT_RM import *
 from INT_RM import *
 from SYSARRAY_RM import *
 
-class finish_test:
-    def __init__(self):
-        self.out1 = []
-        self.out2 = []
-        self.out3 = []
-        self.out4 = []
-        self.rtl_output = []
-        self.all_verified = 0
-
 # Ports:
 # Name                         I/O  size props
 # RDY_get_A1                     O     1
@@ -85,6 +76,15 @@ class finish_test:
 # EN_output3_MAC                 I     1
 # EN_output4_MAC                 I     1
 
+class finish_test:
+    def __init__(self):
+        self.out1 = []
+        self.out2 = []
+        self.out3 = []
+        self.out4 = []
+        self.rtl_output = []
+        self.all_verified = 0
+
 async def reset(dut):
     dut.RST_N.value = 1
     await RisingEdge(dut.CLK)
@@ -92,22 +92,6 @@ async def reset(dut):
     await RisingEdge(dut.CLK)
     dut.RST_N.value = 1
     await RisingEdge(dut.CLK)
-
-async def give_input(dut,A,B,C,S):
-    dut.get_A1_a.value = A
-    dut.get_B1_b.value = B
-    dut.get_C1_c.value = C
-    dut.get_S1_s.value = S
-    await RisingEdge(dut.CLK)
-    dut.EN_get_A1.value = 1
-    dut.EN_get_B1.value = 1
-    dut.EN_get_C1.value = 1
-    dut.EN_get_S1.value = 1
-    await RisingEdge(dut.CLK)
-    dut.EN_get_A1.value = 0
-    dut.EN_get_B1.value = 0
-    dut.EN_get_C1.value = 0
-    dut.EN_get_S1.value = 0     
     
 async def get_output1(dut,test,S):
     while True:
@@ -333,9 +317,6 @@ async def test_systolic_array(dut):
     file_A = open("Mat_A.txt","a+")
     file_B = open("Mat_B.txt","a+")
     file_AB = open("Mat_AB.txt","a+")
-    
-    
-
 
     clock = Clock(dut.CLK, 10, units="us")  
     cocotb.start_soon(clock.start(start_high=False))
@@ -377,10 +358,6 @@ async def test_systolic_array(dut):
     B = [] 
     P = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
     rm_output = []
-    
-    
-    
-    
     
     if(cocotb.plusargs["TEST_TYPE"] == "TEST_RANDOM_INT"):	
         for i in range(tot_testcases):

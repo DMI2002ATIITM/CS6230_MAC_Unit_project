@@ -45,7 +45,6 @@ module mkMAC_with_wrapper(Ifc_MAC_with_wrapper);
     
     rule call_MAC;
         Input_16 inp_A = inpA_fifo.first();
-
         Input_32 inp_C = inpC_fifo.first();
         Input_1  inp_S = inpS_fifo.first();
         

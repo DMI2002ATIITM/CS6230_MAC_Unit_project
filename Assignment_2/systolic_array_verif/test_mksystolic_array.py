@@ -165,14 +165,6 @@ def printm(A):
 def create_random_float16():
     S,E,M = random.randint(0,1),random.randint(0,0x7F),random.randint(0,0x7F)
     return bfmk(S,E,M)
-
-def create_random_float32():
-    S,E = random.randint(0,1),random.randint(0,0xFF)
-    if(E == 0xFF):
-        M = 0
-    else:
-        M = random.randint(0,0x7FFFFF)
-    return fpmk(S,E,M)
         
 async def input_MATB(dut,B):    
     await give_inputB(dut,B[3][0],B[3][1],B[3][2],B[3][3])

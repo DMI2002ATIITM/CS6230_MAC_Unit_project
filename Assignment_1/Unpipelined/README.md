@@ -52,5 +52,42 @@ Python_scripts/:
 3. decode_fp32.py--------------------------------> Contains python code which can convert a floating point number from its IEEE754 representation to decimal representation.
 4. Gen_padded_AB.py------------------------------> Contains python code which reads a textfile, pad zeroes to the right and write to output textfile. This is used to pad the output of float multiplication to convert bfloat16 to fp32 datatype.
 
+# STEPS TO RUN UNPIPELINED MAC
 
+1. Navigate to Assignment_1/Unpipelined/MAC_unpipelined directory
+```
+cd Assignment_1/Unpipelined/MAC_unpipelined/
+```
+2. activate pyenv
+```
+pyenv activate py38
+```
+3. compile and generate verilog from bsv
+```
+make generate_verilog
+```
+4. To simulate using cocotb, for int testcases run the following command
+```
+make simulate PLUSARGS="+TEST_INT=1"
+```
+ <br>  <br>
+5. To simulate using cocotb, for float testcases run the following command
+```
+make simulate PLUSARGS="+TEST_FLOAT=1"
+```
+<br>  <br>
+6. To simulate using cocotb, for random testcases run the following command
+```
+make simulate PLUSARGS="+TEST_RANDOM=1"
+```
+ <br>  <br>
+7.  To simulate using cocotb, for individual testcase run the following command
+```
+make simulate PLUSARGS="+TEST_INDIV=1"
+```
+ <br>  <br>
+## To clean all the builds
+```
+make clean_build
+```
 

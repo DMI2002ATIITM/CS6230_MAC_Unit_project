@@ -70,22 +70,27 @@ make generate_verilog
 ```
 make simulate PLUSARGS="+TEST_INT=1"
 ```
- <br>  <br>
+
 5. To simulate using cocotb, for float testcases run the following command
 ```
 make simulate PLUSARGS="+TEST_FLOAT=1"
 ```
-<br>  <br>
+
 6. To simulate using cocotb, for random testcases run the following command
 ```
 make simulate PLUSARGS="+TEST_RANDOM=1"
 ```
- <br>  <br>
+
 7.  To simulate using cocotb, for individual testcase run the following command
 ```
 make simulate PLUSARGS="+TEST_INDIV=1"
 ```
- <br>  <br>
+
+8. To simulate all testcases, run the following command
+```
+make simulate PLUSARGS="+TEST_INT=1 +TEST_FLOAT=1 +TEST_RANDOM=1 +TEST_INDIV=1"
+```
+
 ## To clean all the builds
 ```
 make clean_build

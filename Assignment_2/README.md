@@ -56,3 +56,42 @@ Assignment_2/:
 12. bf16_mul_pipelined.bsv ---------------------> Contains pipelined code which can do bf16 multiplication
 13. fp32_add_pipelined.bsv ---------------------> Contains pipelined code which can do fp32 addition
 14. systolic_array.bsv ----------------------------> Contains the main bsv code which interconnects sixteen MAC units in mesh network to create a 4x4 systolic array which can perform matrix multiplication.
+
+# STEPS TO RUN SYSTOLIC ARRAY
+
+1. Navigate to Assignment_2/ directory
+```
+cd Assignment_2/
+```
+2. activate pyenv
+```
+pyenv activate py38
+```
+3. compile and generate verilog from bsv
+```
+make generate_verilog
+```
+4. To simulate using cocotb, for random int testcases run the following command
+```
+make simulate PLUSARGS="+TESTCASES=<Desired number of testcases> +TEST_TYPE=TEST_RANDOM_INT"
+```
+where "Desired number of testcases" must be substituted with a number of testcases you wish to run. <br>  <br>
+5. To simulate using cocotb, for random float testcases run the following command
+```
+make simulate PLUSARGS="+TESTCASES=<Desired number of testcases> +TEST_TYPE=TEST_RANDOM_FLOAT"
+```
+where "Desired number of testcases" must be substituted with a number of testcases you wish to run. <br>  <br>
+6. To simulate using cocotb, for one of the inputs to be fixed as identity matrix and the other input matrix containing random integer values, run the following command
+```
+make simulate PLUSARGS="+TESTCASES=<Desired number of testcases> +TEST_TYPE=TEST_IDENTITY_INT"
+```
+where "Desired number of testcases" must be substituted with a number of testcases you wish to run. <br>  <br>
+7. To simulate using cocotb, for one of the inputs to be fixed as identity matrix and the other input matrix containing random floating values, run the following command
+```
+make simulate PLUSARGS="+TESTCASES=<Desired number of testcases> +TEST_TYPE=TEST_IDENTITY_FLOAT"
+```
+where "Desired number of testcases" must be substituted with a number of testcases you wish to run. <br>  <br>
+## To clean all the builds
+```
+make clean_build
+```

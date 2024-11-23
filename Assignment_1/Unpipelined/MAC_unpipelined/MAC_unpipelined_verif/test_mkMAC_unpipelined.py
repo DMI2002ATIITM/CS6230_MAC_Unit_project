@@ -86,11 +86,34 @@ def create_random_float32():
 @cocotb.test()
 async def test_MAC_unpipelined(dut):
 
+    if("TEST_FLOAT" not in cocotb.plusargs):
+        cocotb.plusargs["TEST_FLOAT"] = "0"
+    if("TEST_INT" not in cocotb.plusargs):
+        cocotb.plusargs["TEST_INT"] = "0"
+    if("TEST_RANDOM" not in cocotb.plusargs):
+        cocotb.plusargs["TEST_RANDOM"] = "0"
+    if("TEST_INDIV" not in cocotb.plusargs):
+        cocotb.plusargs["TEST_INDIV"] = "0"
+
+    if(cocotb.plusargs["TEST_FLOAT"] not in ["0","1"] or cocotb.plusargs["TEST_INT"] not in ["0","1"] or cocotb.plusargs["TEST_RANDOM"] not in ["0","1"] or cocotb.plusargs["TEST_INDIV"] not in ["0","1"]):
+        error = 1
+        print()
+        print("***********************************************************************************************")
+        print("ERROR: Invalid arguments given")
+        print("The valid arguments are:")
+        print("                         * TEST_FLOAT  -> 1/0") 
+        print("                         * TEST_INT    -> 1/0") 
+        print("                         * TEST_RANDOM -> 1/0")
+        print("                         * TEST_INDIV  -> 1/0")
+        print("***********************************************************************************************")
+        print()
+        assert error == 0, "Invalid arguments given, check for syntax, spelling given in arguments"
+
     # Choose type of test
-    test_float = 1
-    test_int = 1
-    test_random = 1
-    test_indiv = 0
+    test_float = int(cocotb.plusargs["TEST_FLOAT"])
+    test_int = int(cocotb.plusargs["TEST_INT"])
+    test_random = int(cocotb.plusargs["TEST_RANDOM"])
+    test_indiv = int(cocotb.plusargs["TEST_INDIV"])
 
     clock = Clock(dut.CLK, 10, units="us")  
     cocotb.start_soon(clock.start(start_high=False))
